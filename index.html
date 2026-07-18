@@ -162,25 +162,29 @@
             return (new Date() - new Date(isoStr)) < (24 * 60 * 60 * 1000);
         }
 
-function renderizar() {
+// ==============================================================
+        // 🔄 MOTOR DE RENDERS Y CONTROL BINARIO (Trello-Style)
+        // ==============================================================
+
+        function renderizar() {
             const container = document.getElementById('feed-container');
-            
-            // Clase de cuadrícula responsiva estándar para reutilizar
             const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
 
+            // Separamos estrictamente por el estado booleano "resuelto"
+            const activas = RAM_Novedades.filter(n => !n.resuelto);
+            const resueltasTodas = RAM_Novedades.filter(n => n.resuelto);
+
             // ==============================================================
-            // 🏢 VISTA 1: HISTORIAL DE RESUELTOS COMPLETOS
+            // 🏢 FILTRO 1: PESTAÑA RESUELTOS (HISTORIAL COMPLETO)
             // ==============================================================
             if (vistaActual === 'resueltos') {
-                const resueltosCompletos = RAM_Novedades.filter(n => n.resuelto);
-
-                if (resueltosCompletos.length === 0) {
+                if (resueltasTodas.length === 0) {
                     container.innerHTML = `<div class="h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Sin historial de resueltos</span></div>`;
                     return;
                 }
 
                 let htmlResueltos = `<div class="${gridClass}">`;
-                resueltosCompletos.forEach(n => { htmlResueltos += generarHtmlCard(n); });
+                resueltasTodas.forEach(n => { htmlResueltos += generarHtmlCard(n); });
                 htmlResueltos += `</div>`;
                 
                 container.innerHTML = htmlResueltos;
@@ -188,48 +192,63 @@ function renderizar() {
             }
 
             // ==============================================================
-            // 📅 VISTA 2: PENDIENTES (LIVE FEED SEGREGADO)
+            // 📅 FILTRO 2: PESTAÑA PENDIENTES (SÓLO ACTIVAS)
             // ==============================================================
-            const activas = RAM_Novedades.filter(n => !n.resuelto);
-            const resueltasRecientes = RAM_Novedades.filter(n => n.resuelto && esMenorA24Horas(n.fecha_resolucion));
-
-            if (activas.length === 0 && resueltasRecientes.length === 0) {
-                container.innerHTML = `<div class="h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Todo al día</span></div>`;
+            if (activas.length === 0) {
+                container.innerHTML = `<div class="h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Bandeja Limpia ✨</span></div>`;
                 return;
             }
 
-            let htmlFinal = '';
-
-            // Bloque A: Novedades Activas / Pendientes
-            if (activas.length > 0) {
-                htmlFinal += `
-                <div class="w-full mb-4 shrink-0">
-                    <h2 class="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 flex items-center gap-2 mb-3">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> Novedades Activas (${activas.length})
-                    </h2>
-                </div>
-                <div class="${gridClass}">`;
-                activas.forEach(n => { htmlFinal += generarHtmlCard(n); });
-                htmlFinal += `</div>`;
-            }
-
-            // Bloque B: Resueltas hace menos de 24hs (Separación estricta al fondo)
-            if (resueltasRecientes.length > 0) {
-                htmlFinal += `
-                <div class="w-full pt-4 mt-4 border-t border-slate-200 dark:border-slate-700 shrink-0 mb-4">
-                    <h2 class="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                        ✅ Resueltas Hoy (Últimas 24 hs)
-                    </h2>
-                </div>
-                <div class="${gridClass}">`;
-                resueltasRecientes.forEach(n => { htmlFinal += generarHtmlCard(n); });
-                htmlFinal += `</div>`;
-            }
+            let htmlFinal = `
+            <div class="w-full mb-4 shrink-0">
+                <h2 class="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 flex items-center gap-2 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> Novedades Activas (${activas.length})
+                </h2>
+            </div>
+            <div class="${gridClass}">`;
+            
+            activas.forEach(n => { htmlFinal += generarHtmlCard(n); });
+            htmlFinal += `</div>`;
 
             container.innerHTML = htmlFinal;
         }
 
-        // 👉 FUNCIÓN AUXILIAR AISLADA PARA CONSTRUIRE EL HTML DE LA CARD
+        // ==============================================================
+        // ⚡ ACCIÓN DE RESOLVER CON DESVANECIMIENTO INMEDIATO
+        // ==============================================================
+        function resolver(id) {
+            if (vistaActual === 'resueltos') return;
+            
+            const card = document.getElementById(`card-${id}`);
+            if (card) {
+                // Inyectamos la animación de salida hacia la derecha
+                card.classList.add('fade-out');
+                
+                // Esperamos los 300ms de la transición CSS para modificar los datos y limpiar el DOM
+                setTimeout(() => {
+                    let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
+                    if (idx > -1) {
+                        RAM_Novedades[idx].resuelto = true;
+                        RAM_Novedades[idx].fecha_resolucion = new Date().toISOString();
+                    }
+                    renderizar();
+                }, 300);
+            } else {
+                let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
+                if (idx > -1) {
+                    RAM_Novedades[idx].resuelto = true;
+                    RAM_Novedades[idx].fecha_resolucion = new Date().toISOString();
+                }
+                renderizar();
+            }
+
+            // Despachamos la actualización persistente al servidor en segundo plano
+            fetch(`${API_URL}/api/novedades/actualizar`, { 
+                method: 'POST', 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ action: 'resolver', id_novedad: id }) 
+            }).catch(e => console.error("Error al persistir resolución:", e));
+        }        // 👉 FUNCIÓN AUXILIAR AISLADA PARA CONSTRUIRE EL HTML DE LA CARD
         function generarHtmlCard(n) {
             let cfg = { icon: '📌', bg: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-100 dark:border-indigo-800/50' };
             if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-900 dark:text-orange-200', border: 'border-orange-200 dark:border-orange-800/50' };
