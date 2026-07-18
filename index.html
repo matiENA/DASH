@@ -172,26 +172,34 @@
         // 🔄 MOTOR DE RENDERS (CARRUSEL HORIZONTAL CSS NATIVO)
         // ==============================================================
 
+// ==============================================================
+        // 🔄 MOTOR DE RENDERS (KANBAN POR CATEGORÍA + AUTO-SCROLL)
+        // ==============================================================
+        let autoScrollIntervals = []; // Almacena los intervalos de animación para limpiarlos
+
         function renderizar() {
             const container = document.getElementById('feed-container');
             
-            // 👉 MAGIA DEL CARRUSEL: 
-            // 85% ancho en móvil, 45% en tablet, 31% en escritorio. Desplazamiento horizontal.
-            const carouselClass = "grid grid-flow-col auto-cols-[85%] md:auto-cols-[45%] lg:auto-cols-[31%] gap-5 overflow-x-auto snap-x snap-mandatory pb-6 pt-2 custom-scrollbar items-stretch w-full";
+            // Limpiamos intervalos anteriores si re-renderizamos
+            autoScrollIntervals.forEach(clearInterval);
+            autoScrollIntervals = [];
 
+            // Separamos estrictamente por el estado booleano "resuelto"
             const activas = RAM_Novedades.filter(n => !n.resuelto);
             const resueltasTodas = RAM_Novedades.filter(n => n.resuelto);
 
             // ==============================================================
-            // 🏢 FILTRO 1: PESTAÑA RESUELTOS
+            // 🏢 FILTRO 1: PESTAÑA RESUELTOS (HISTORIAL COMPLETO)
             // ==============================================================
             if (vistaActual === 'resueltos') {
                 if (resueltasTodas.length === 0) {
-                    container.innerHTML = `<div class="h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Sin historial de resueltos</span></div>`;
+                    container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Sin historial de resueltos</span></div>`;
                     return;
                 }
 
-                let htmlResueltos = `<div class="${carouselClass}">`;
+                // Los resueltos sí los dejamos en un Grid normal porque es un archivo histórico
+                const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
+                let htmlResueltos = `<div class="${gridClass}">`;
                 resueltasTodas.forEach(n => { htmlResueltos += generarHtmlCard(n); });
                 htmlResueltos += `</div>`;
                 
@@ -200,28 +208,101 @@
             }
 
             // ==============================================================
-            // 📅 FILTRO 2: PESTAÑA PENDIENTES
+            // 📅 FILTRO 2: PESTAÑA PENDIENTES (SÓLO ACTIVAS EN CARRUSELES)
             // ==============================================================
             if (activas.length === 0) {
-                container.innerHTML = `<div class="h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Bandeja Limpia ✨</span></div>`;
+                container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Bandeja Limpia ✨</span></div>`;
                 return;
             }
 
-            let htmlFinal = `
-            <div class="w-full mb-2 shrink-0">
-                <h2 class="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 flex items-center gap-2 mb-1">
-                    <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> Novedades Activas (${activas.length})
-                </h2>
-            </div>
-            <div class="${carouselClass}">`;
-            
-            activas.forEach(n => { htmlFinal += generarHtmlCard(n); });
-            htmlFinal += `</div>`;
+            // Agrupamos las novedades por tipo
+            const categorias = {
+                'BAJA_DIAGRAMA': { titulo: '📅 Baja / Término de Diagrama', colorText: 'text-orange-600 dark:text-orange-400', items: [] },
+                'CERTIFICACION_UNIDAD': { titulo: '🚚 Certificaciones de Unidad', colorText: 'text-blue-600 dark:text-blue-400', items: [] },
+                'EXAMEN_CHOFER': { titulo: '🩺 Exámenes / Vencimientos', colorText: 'text-rose-600 dark:text-rose-400', items: [] },
+                'REPARACION': { titulo: '🔧 Reparaciones Requeridas', colorText: 'text-slate-600 dark:text-slate-400', items: [] }
+            };
+
+            activas.forEach(n => {
+                if (categorias[n.tipo_novedad]) categorias[n.tipo_novedad].items.push(n);
+                else categorias['REPARACION'].items.push(n); // Fallback por si acaso
+            });
+
+            let htmlFinal = '';
+            let idsCarruseles = []; // Guardamos los IDs para inyectarles el Auto-Scroll
+
+            const carouselClass = "grid grid-flow-col auto-cols-[85%] md:auto-cols-[45%] lg:auto-cols-[31%] gap-5 overflow-x-auto snap-x snap-mandatory pb-6 pt-2 custom-scrollbar items-stretch w-full scroll-smooth";
+
+            // Generamos una fila por cada categoría que tenga items
+            Object.keys(categorias).forEach((key, index) => {
+                const cat = categorias[key];
+                if (cat.items.length > 0) {
+                    let carouselId = `carrusel-cat-${index}`;
+                    idsCarruseles.push(carouselId);
+
+                    htmlFinal += `
+                    <section class="w-full mb-8">
+                        <div class="w-full mb-2 shrink-0 flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                            <h2 class="text-xs font-black uppercase tracking-widest ${cat.colorText} flex items-center gap-2">
+                                ${cat.titulo}
+                            </h2>
+                            <span class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 px-2 py-0.5 rounded text-[10px] font-black">${cat.items.length}</span>
+                        </div>
+                        <div id="${carouselId}" class="${carouselClass}">`;
+                    
+                    cat.items.forEach(n => { htmlFinal += generarHtmlCard(n); });
+                    
+                    htmlFinal += `</div></section>`;
+                }
+            });
 
             container.innerHTML = htmlFinal;
+
+            // 👉 INYECTAR LÓGICA DE AUTO-SCROLL DESPUÉS DE RENDERIZAR
+            setTimeout(() => {
+                idsCarruseles.forEach(id => inicializarAutoScroll(id));
+            }, 100);
         }
 
-        // 👉 FUNCIÓN AUXILIAR AISLADA PARA CONSTRUIR EL HTML DE LA CARD
+        // ==============================================================
+        // 🚄 MOTOR DE AUTO-SCROLL (CON PAUSA AL HOVER/TOUCH)
+        // ==============================================================
+        function inicializarAutoScroll(containerId) {
+            const track = document.getElementById(containerId);
+            if (!track) return;
+
+            let isPaused = false;
+            let scrollSpeed = 1.5; // Píxeles por iteración
+
+            // Pausa cuando el mouse está encima o el usuario toca la pantalla
+            track.addEventListener('mouseenter', () => isPaused = true);
+            track.addEventListener('mouseleave', () => isPaused = false);
+            track.addEventListener('touchstart', () => isPaused = true, {passive: true});
+            track.addEventListener('touchend', () => {
+                setTimeout(() => isPaused = false, 1500); // Demora la reanudación en móviles
+            }, {passive: true});
+
+            const interval = setInterval(() => {
+                if (isPaused) return;
+
+                // Verificamos si el carrusel necesita hacer scroll (si el contenido es más ancho que la pantalla)
+                if (track.scrollWidth > track.clientWidth) {
+                    track.scrollLeft += scrollSpeed;
+
+                    // Si llega al final, vuelve al principio suavemente
+                    if (Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth) {
+                        isPaused = true; // Pausamos un segundo al final
+                        setTimeout(() => {
+                            track.scrollTo({ left: 0, behavior: 'smooth' });
+                            setTimeout(() => isPaused = false, 1000); // Reanuda tras volver al inicio
+                        }, 2000);
+                    }
+                }
+            }, 30); // ~33 FPS
+
+            autoScrollIntervals.push(interval);
+        }
+                // 👉 FUNCIÓN AUXILIAR AISLADA PARA CONSTRUIR EL HTML DE LA CARD
         function generarHtmlCard(n) {
             let cfg = { icon: '📌', bg: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-100 dark:border-indigo-800/50' };
             if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-900 dark:text-orange-200', border: 'border-orange-200 dark:border-orange-800/50' };
