@@ -45,10 +45,15 @@
             </div>
             
             <form onsubmit="enviarNovedad(event)" class="p-5 flex-1 overflow-y-auto flex flex-col gap-5">
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nombre Conductor</label>
-                    <input type="text" id="input-nom" placeholder="Ej: PEREZ JUAN" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none uppercase" required>
+                <div class="relative">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Buscar Conductor</label>
+                    <input type="text" id="input-nom" placeholder="Escriba nombre o tractor..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none uppercase shadow-sm transition-all" autocomplete="off" oninput="filtrarChoferes()" onfocus="filtrarChoferes()" required>
+                    
+                    <div id="dropdown-choferes" class="hidden absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-56 overflow-y-auto custom-scrollbar">
+                    </div>
                 </div>
+                
+                <input type="hidden" id="input-ute">
                 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -216,6 +221,7 @@
                 nom: document.getElementById('input-nom').value.toUpperCase(),
                 tractor: document.getElementById('input-tractor').value.toUpperCase(),
                 srv: document.getElementById('input-srv').value,
+                n_ute: document.getElementById('input-ute').value || 'S/D', // 👉 Se envía la UTE automáticamente
                 tipo_novedad: document.getElementById('input-tipo').value,
                 fecha_objetivo: document.getElementById('input-fecha').value,
                 detalle: document.getElementById('input-detalle').value
@@ -232,6 +238,90 @@
             })
             .finally(() => { btn.innerHTML = "Publicar Novedad"; });
         }
+
+        // ==============================================================
+        // 🧠 MOTOR DE AUTOCOMPLETADO EN RAM
+        // ==============================================================
+        let RAM_Flota = [];
+
+        // 1. Descargamos el padrón maestro al iniciar
+        fetch(`${API_URL}/api/datos`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.diagramas && data.diagramas.diagramas) {
+                    RAM_Flota = data.diagramas.diagramas;
+                }
+            });
+
+        // 2. Mantenemos la lista actualizada si hay cambios en vivo
+        socket.on('datos_actualizados', (data) => {
+             if (data && data.diagramas && data.diagramas.diagramas) {
+                 RAM_Flota = data.diagramas.diagramas;
+             }
+        });
+
+        // 3. Filtrar mientras el usuario escribe
+        function filtrarChoferes() {
+            const input = document.getElementById('input-nom');
+            const drop = document.getElementById('dropdown-choferes');
+            const val = input.value.toLowerCase().trim();
+            
+            if (val.length < 2) {
+                drop.classList.add('hidden');
+                return;
+            }
+
+            // Busca por nombre o por patente
+            const filtrados = RAM_Flota.filter(c => 
+                c.nom.toLowerCase().includes(val) || 
+                (c.tractor && c.tractor.toLowerCase().includes(val))
+            ).slice(0, 8); // Mostramos máximo 8 para no saturar la pantalla móvil
+
+            if (filtrados.length === 0) {
+                drop.classList.add('hidden');
+                return;
+            }
+
+            let html = '';
+            filtrados.forEach(c => {
+                html += `
+                <div onclick="seleccionarAutocompletado('${c.nom.replace(/'/g, "\\'")}', '${c.tractor || ''}', '${c.srv || 'S/A'}', '${c.n_ute || ''}')" class="p-3 border-b border-slate-100 hover:bg-indigo-50 cursor-pointer transition-colors flex justify-between items-center active:bg-indigo-100">
+                    <div class="flex flex-col truncate pr-2">
+                        <span class="font-black text-sm text-slate-800 truncate">${c.nom}</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">UTE: ${c.n_ute || '-'}</span>
+                    </div>
+                    <div class="flex flex-col items-end shrink-0">
+                        <span class="font-black text-indigo-600 text-xs tracking-wide">${c.tractor || 'S/D'}</span>
+                        <span class="text-[9px] font-black bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded mt-1 uppercase border border-slate-200">${c.srv || 'S/A'}</span>
+                    </div>
+                </div>`;
+            });
+
+            drop.innerHTML = html;
+            drop.classList.remove('hidden');
+        }
+
+        // 4. Inyectar datos al formulario al seleccionar
+        function seleccionarAutocompletado(nom, tractor, srv, ute) {
+            document.getElementById('input-nom').value = nom;
+            document.getElementById('input-tractor').value = tractor;
+            document.getElementById('input-ute').value = ute;
+            
+            let srvSelect = document.getElementById('input-srv');
+            let opciones = Array.from(srvSelect.options).map(o => o.value);
+            srvSelect.value = opciones.includes(srv) ? srv : 'S/A';
+
+            document.getElementById('dropdown-choferes').classList.add('hidden');
+        }
+
+        // 5. UX: Cerrar dropdown si se toca fuera
+        document.addEventListener('click', (e) => {
+            const drop = document.getElementById('dropdown-choferes');
+            const input = document.getElementById('input-nom');
+            if (drop && !drop.contains(e.target) && e.target !== input) {
+                drop.classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>
