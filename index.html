@@ -11,11 +11,13 @@
         tailwind.config = { darkMode: 'class', theme: { extend: {} } }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; } 
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      body { font-family: 'Inter', sans-serif; }
+        /* Carrusel y Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 6px; } 
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         html.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        /* Animaciones */
         .fade-out { opacity: 0; transform: scale(0.90); transition: all 0.3s ease; }
     </style>
 </head>
@@ -166,16 +168,22 @@
         // 🔄 MOTOR DE RENDERS Y CONTROL BINARIO (Trello-Style)
         // ==============================================================
 
+// ==============================================================
+        // 🔄 MOTOR DE RENDERS (CARRUSEL HORIZONTAL CSS NATIVO)
+        // ==============================================================
+
         function renderizar() {
             const container = document.getElementById('feed-container');
-            const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
+            
+            // 👉 MAGIA DEL CARRUSEL: 
+            // 85% ancho en móvil, 45% en tablet, 31% en escritorio. Desplazamiento horizontal.
+            const carouselClass = "grid grid-flow-col auto-cols-[85%] md:auto-cols-[45%] lg:auto-cols-[31%] gap-5 overflow-x-auto snap-x snap-mandatory pb-6 pt-2 custom-scrollbar items-stretch w-full";
 
-            // Separamos estrictamente por el estado booleano "resuelto"
             const activas = RAM_Novedades.filter(n => !n.resuelto);
             const resueltasTodas = RAM_Novedades.filter(n => n.resuelto);
 
             // ==============================================================
-            // 🏢 FILTRO 1: PESTAÑA RESUELTOS (HISTORIAL COMPLETO)
+            // 🏢 FILTRO 1: PESTAÑA RESUELTOS
             // ==============================================================
             if (vistaActual === 'resueltos') {
                 if (resueltasTodas.length === 0) {
@@ -183,7 +191,7 @@
                     return;
                 }
 
-                let htmlResueltos = `<div class="${gridClass}">`;
+                let htmlResueltos = `<div class="${carouselClass}">`;
                 resueltasTodas.forEach(n => { htmlResueltos += generarHtmlCard(n); });
                 htmlResueltos += `</div>`;
                 
@@ -192,20 +200,20 @@
             }
 
             // ==============================================================
-            // 📅 FILTRO 2: PESTAÑA PENDIENTES (SÓLO ACTIVAS)
+            // 📅 FILTRO 2: PESTAÑA PENDIENTES
             // ==============================================================
             if (activas.length === 0) {
-                container.innerHTML = `<div class="h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Bandeja Limpia</span></div>`;
+                container.innerHTML = `<div class="h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Bandeja Limpia ✨</span></div>`;
                 return;
             }
 
             let htmlFinal = `
-            <div class="w-full mb-4 shrink-0">
-                <h2 class="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 flex items-center gap-2 mb-3">
+            <div class="w-full mb-2 shrink-0">
+                <h2 class="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 flex items-center gap-2 mb-1">
                     <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> Novedades Activas (${activas.length})
                 </h2>
             </div>
-            <div class="${gridClass}">`;
+            <div class="${carouselClass}">`;
             
             activas.forEach(n => { htmlFinal += generarHtmlCard(n); });
             htmlFinal += `</div>`;
@@ -213,7 +221,44 @@
             container.innerHTML = htmlFinal;
         }
 
-        // ==============================================================
+        // 👉 FUNCIÓN AUXILIAR AISLADA PARA CONSTRUIR EL HTML DE LA CARD
+        function generarHtmlCard(n) {
+            let cfg = { icon: '📌', bg: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-100 dark:border-indigo-800/50' };
+            if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-900 dark:text-orange-200', border: 'border-orange-200 dark:border-orange-800/50' };
+            if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { icon: '🚚', bg: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-900 dark:text-blue-200', border: 'border-blue-200 dark:border-blue-800/50' };
+            if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { icon: '🩺', bg: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-200 dark:border-rose-800/50' };
+            if (n.tipo_novedad === 'REPARACION') cfg = { icon: '🔧', bg: 'bg-slate-100 dark:bg-slate-800/50', text: 'text-slate-800 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-700' };
+
+            let cardClass = n.resuelto 
+                ? "bg-emerald-50/40 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-900/40 opacity-70 grayscale-[0.2] scale-[0.99]" 
+                : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm";
+
+            // 👉 NOTA: Se agregó 'snap-start' y 'h-full' para que funcionen perfecto en el carrusel
+            return `
+            <article id="card-${n.id}" class="snap-start rounded-2xl p-5 border relative overflow-hidden transition-all duration-500 w-full flex flex-col h-full ${cardClass}">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex flex-col min-w-0 pr-3">
+                        <h3 class="font-black ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-lg leading-tight uppercase truncate w-full">${n.nom}</h3>
+                        <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase border border-slate-200 dark:border-slate-600">${n.srv}</span>
+                            <span class="text-xs font-bold ${n.resuelto ? 'text-emerald-700 dark:text-emerald-500' : 'text-indigo-600 dark:text-indigo-400'} tracking-wide">${n.tractor}</span>
+                        </div>
+                    </div>
+                    <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-8 h-8 rounded-lg border-2 shrink-0 transition-colors shadow-sm focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500 border-emerald-500 dark:bg-emerald-600 dark:border-emerald-600 cursor-default' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 hover:border-emerald-400 dark:hover:border-emerald-500 cursor-pointer'}">
+                        ${n.resuelto ? `<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : ''}
+                    </button>
+                </div>
+
+                <div class="${cfg.bg} ${cfg.border} border rounded-xl p-3.5 mt-auto">
+                    <div class="flex justify-between items-center border-b border-black/5 dark:border-white/5 pb-2 mb-2 gap-2">
+                        <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0">${cfg.icon} ${String(n.tipo_novedad).replace('_', ' ')}</span>
+                        ${n.fecha_objetivo ? `<span class="bg-white/80 dark:bg-slate-950/50 px-2 py-0.5 rounded text-[9px] font-black ${cfg.text} shadow-sm whitespace-nowrap">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
+                    </div>
+                    <p class="${cfg.text} text-xs font-medium leading-relaxed whitespace-pre-wrap break-words">${n.detalle}</p>
+                </div>
+            </article>`;
+        }
+                // ==============================================================
         // ⚡ ACCIÓN DE RESOLVER CON DESVANECIMIENTO INMEDIATO
         // ==============================================================
         function resolver(id) {
