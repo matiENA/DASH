@@ -246,7 +246,7 @@
             let htmlFinal = '';
             let idsCarruseles = [];
 
-            const carouselClass = "grid grid-flow-col auto-cols-[88%] sm:auto-cols-[55%] md:auto-cols-[42%] lg:auto-cols-[31%] gap-5 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 custom-scrollbar items-stretch w-full scroll-smooth";
+            const carouselClass = "grid grid-flow-col auto-cols-[88%] sm:auto-cols-[55%] md:auto-cols-[42%] lg:auto-cols-[31%] gap-5 overflow-x-auto pb-4 pt-2 custom-scrollbar items-stretch w-full";
 
             Object.keys(categorias).forEach((key, index) => {
                 const cat = categorias[key];
@@ -278,14 +278,14 @@
         }
 
         // ==============================================================
-        // 🚄 MOTOR DE AUTO-SCROLL ÁGIL (SIN BARRAS VISIBLES)
+        // 🚄 MOTOR DE AUTO-SCROLL ÁGIL (REACTIVADO Y FLUIDO)
         // ==============================================================
         function inicializarAutoScroll(containerId) {
             const track = document.getElementById(containerId);
             if (!track) return;
 
             let isPaused = false;
-            let scrollSpeed = 2.5; // Velocidad agilizada por ciclo
+            let scrollSpeed = 1.8;
 
             track.addEventListener('mouseenter', () => isPaused = true);
             track.addEventListener('mouseleave', () => isPaused = false);
@@ -300,12 +300,12 @@
                 if (track.scrollWidth > track.clientWidth) {
                     track.scrollLeft += scrollSpeed;
 
-                    if (Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth) {
+                    if (Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 2) {
                         isPaused = true;
                         setTimeout(() => {
                             track.scrollTo({ left: 0, behavior: 'smooth' });
-                            setTimeout(() => isPaused = false, 800);
-                        }, 1500);
+                            setTimeout(() => isPaused = false, 1000);
+                        }, 1200);
                     }
                 }
             }, 25);
