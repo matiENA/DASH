@@ -125,9 +125,9 @@
                     </select>
                 </div>
 
-                <div id="div-fecha" class="hidden">
-                    <label class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1.5 block">Fecha Objetivo / Venc.</label>
-                    <input type="date" id="input-fecha" class="w-full bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 text-sm font-bold text-indigo-900 dark:text-indigo-200 outline-none">
+                <div id="div-fecha">
+                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Fecha Objetivo / Venc. <span class="text-slate-400 font-normal lowercase">(opcional)</span></label>
+                    <input type="date" id="input-fecha" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                 </div>
 
                 <div>
@@ -246,7 +246,7 @@
             let htmlFinal = '';
             let idsCarruseles = [];
 
-            const carouselClass = "grid grid-flow-col auto-cols-[88%] sm:auto-cols-[55%] md:auto-cols-[42%] lg:auto-cols-[31%] gap-5 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 custom-scrollbar items-stretch w-full scroll-smooth";
+            const carouselClass = "grid grid-flow-col auto-cols-[88%] sm:auto-cols-[55%] md:auto-cols-[42%] lg:auto-cols-[31%] gap-5 overflow-x-auto pb-4 pt-2 custom-scrollbar items-stretch w-full";
 
             Object.keys(categorias).forEach((key, index) => {
                 const cat = categorias[key];
@@ -278,14 +278,14 @@
         }
 
         // ==============================================================
-        // 🚄 MOTOR DE AUTO-SCROLL ÁGIL (SIN BARRAS VISIBLES)
+        // 🚄 MOTOR DE AUTO-SCROLL ÁGIL (REACTIVADO Y FLUIDO)
         // ==============================================================
         function inicializarAutoScroll(containerId) {
             const track = document.getElementById(containerId);
             if (!track) return;
 
             let isPaused = false;
-            let scrollSpeed = 2.5; // Velocidad agilizada por ciclo
+            let scrollSpeed = 1.8;
 
             track.addEventListener('mouseenter', () => isPaused = true);
             track.addEventListener('mouseleave', () => isPaused = false);
@@ -300,17 +300,34 @@
                 if (track.scrollWidth > track.clientWidth) {
                     track.scrollLeft += scrollSpeed;
 
-                    if (Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth) {
+                    if (Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 2) {
                         isPaused = true;
                         setTimeout(() => {
                             track.scrollTo({ left: 0, behavior: 'smooth' });
-                            setTimeout(() => isPaused = false, 800);
-                        }, 1500);
+                            setTimeout(() => isPaused = false, 1000);
+                        }, 1200);
                     }
                 }
             }, 25);
 
             autoScrollIntervals.push(interval);
+        }
+
+        function formatearTimestamp(ts, id) {
+            let d = ts ? new Date(ts) : null;
+            if (!d || isNaN(d.getTime())) {
+                if (id && !isNaN(Number(id)) && Number(id) > 1000000000000) {
+                    d = new Date(Number(id));
+                } else {
+                    return '';
+                }
+            }
+            const dia = d.getDate();
+            const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+            const mes = meses[d.getMonth()];
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            return `${dia} ${mes} ${hh}:${mm}`;
         }
 
         // ==============================================================
@@ -327,6 +344,8 @@
                 ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/40 opacity-75 grayscale-[0.1]" 
                 : "bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700";
 
+            let timeFormatted = formatearTimestamp(n.timestamp, n.id);
+
             return `
             <article id="card-${n.id}" class="snap-start rounded-2xl p-5 border relative overflow-hidden transition-all duration-300 w-full flex flex-col h-full ${cardClass}">
                 <div class="flex justify-between items-start mb-3.5">
@@ -342,12 +361,19 @@
                     </button>
                 </div>
 
-                <div class="${cfg.bg} ${cfg.border} border rounded-xl p-3.5 mt-auto">
-                    <div class="flex justify-between items-center border-b border-black/5 dark:border-white/5 pb-2 mb-2 gap-2">
-                        <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0">${cfg.icon} ${String(n.tipo_novedad).replace(/_/g, ' ')}</span>
-                        ${n.fecha_objetivo ? `<span class="bg-white/90 dark:bg-slate-950/70 px-2 py-0.5 rounded-md text-[9px] font-black ${cfg.text} shadow-2xs whitespace-nowrap border border-black/5 dark:border-white/5">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
+                <div class="${cfg.bg} ${cfg.border} border rounded-xl p-3.5 mt-auto flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center border-b border-black/5 dark:border-white/5 pb-2 mb-2 gap-2">
+                            <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0">${cfg.icon} ${String(n.tipo_novedad).replace(/_/g, ' ')}</span>
+                            ${n.fecha_objetivo ? `<span class="bg-white/90 dark:bg-slate-950/70 px-2 py-0.5 rounded-md text-[9px] font-black ${cfg.text} shadow-2xs whitespace-nowrap border border-black/5 dark:border-white/5">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
+                        </div>
+                        <p class="${cfg.text} text-xs font-semibold leading-relaxed whitespace-pre-wrap break-words mb-2">${n.detalle}</p>
                     </div>
-                    <p class="${cfg.text} text-xs font-semibold leading-relaxed whitespace-pre-wrap break-words">${n.detalle}</p>
+                    ${timeFormatted ? `<div class="flex justify-end items-center pt-1.5 border-t border-black/5 dark:border-white/5 mt-1">
+                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-wider flex items-center gap-1">
+                            🕒 ${timeFormatted}
+                        </span>
+                    </div>` : ''}
                 </div>
             </article>`;
         }
@@ -447,10 +473,7 @@
         }
 
         function adaptarFormulario(tipo) {
-            const div = document.getElementById('div-fecha');
-            if (['BAJA_DIAGRAMA', 'CERTIFICACION_UNIDAD', 'EXAMEN_CHOFER'].includes(tipo)) {
-                div.classList.remove('hidden'); document.getElementById('input-fecha').required = true;
-            } else { div.classList.add('hidden'); document.getElementById('input-fecha').required = false; }
+            document.getElementById('input-fecha').required = false;
         }
 
         function enviarNovedad(e) {
@@ -472,7 +495,7 @@
                 method: 'POST', headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: 'nueva', payload })
             }).then(() => {
-                cerrarModalNueva(); e.target.reset(); document.getElementById('div-fecha').classList.add('hidden');
+                cerrarModalNueva(); e.target.reset();
             }).finally(() => { btn.innerHTML = "PUBLICAR NOVEDAD"; });
         }
     </script>
