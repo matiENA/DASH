@@ -4,66 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Novedades Live | EOR</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Habilitamos el modo oscuro por clases
-        tailwind.config = { darkMode: 'class', theme: { extend: {} } }
+        tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'] } } } }
     </script>
     <style>
-      body { font-family: 'Inter', sans-serif; }
-        /* Carrusel y Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 6px; } 
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        html.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
-        /* Animaciones */
-        .fade-out { opacity: 0; transform: scale(0.90); transition: all 0.3s ease; }
+        body { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
+        
+        /* 🚫 OCULTAR BARRAS DE SCROLL EN TODO EL SITIO */
+        ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        * { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        .custom-scrollbar::-webkit-scrollbar { display: none !important; }
+        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ⚡ ANIMACIÓN ULTRA RÁPIDA DE SALIDA AL BORDE DE PANTALLA */
+        .fade-out {
+            opacity: 0 !important;
+            transform: translateX(120px) scale(0.92) rotate(1.5deg) !important;
+            transition: transform 0.15s cubic-bezier(0.4, 0, 1, 1), opacity 0.12s ease-out !important;
+            pointer-events: none;
+        }
+
+        /* Ecosistema visual extra */
+        .glass-header {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .glow-accent {
+            box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.25);
+        }
     </style>
 </head>
-<body class="flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-300">
+<body class="flex flex-col h-screen overflow-hidden bg-slate-100/70 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-300 antialiased selection:bg-indigo-500 selection:text-white">
 
-    <header class="bg-white dark:bg-slate-800 px-5 pt-8 pb-4 shadow-sm z-50 shrink-0 border-b border-slate-200 dark:border-slate-700 transition-colors duration-300">
-        <div class="flex justify-between items-start max-w-7xl mx-auto">
-            <div>
-                <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Live Feed</h1>
-                <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Alertas & Operaciones</p>
+    <!-- HEADER CON DISEÑO GLASSMORPHISM -->
+    <header class="glass-header bg-white/85 dark:bg-slate-900/85 px-6 pt-6 pb-4 shadow-sm z-50 shrink-0 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-300 sticky top-0">
+        <div class="flex justify-between items-center max-w-7xl mx-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 font-black text-lg">
+                    ⚡
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                        Live Feed <span class="bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">EOR</span>
+                    </h1>
+                    <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Alertas & Operaciones en Tiempo Real</p>
+                </div>
             </div>
             
-            <button onclick="toggleDarkMode()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors focus:outline-none">
+            <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700/80 transition-all focus:outline-none border border-slate-200/60 dark:border-slate-700/60 active:scale-95 shadow-sm" title="Alternar Modo Oscuro">
                 <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                 <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
             </button>
         </div>
         
-        <div class="mt-4 flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl shadow-inner w-full sm:w-auto max-w-md mx-auto">
-            <button onclick="cambiarVista('pendientes')" id="btn-pendientes" class="flex-1 py-2 bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-lg shadow transition-all">Pendientes</button>
-            <button onclick="cambiarVista('resueltos')" id="btn-resueltos" class="flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all">Resueltos</button>
+        <div class="mt-4 flex bg-slate-200/60 dark:bg-slate-900/90 p-1 rounded-xl shadow-inner w-full sm:w-auto max-w-md mx-auto border border-slate-300/40 dark:border-slate-800/80">
+            <button onclick="cambiarVista('pendientes')" id="btn-pendientes" class="flex-1 py-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center gap-1.5">
+                <span>🔥</span> Pendientes
+            </button>
+            <button onclick="cambiarVista('resueltos')" id="btn-resueltos" class="flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 flex items-center justify-center gap-1.5">
+                <span>✅</span> Resueltos
+            </button>
         </div>
     </header>
 
-<main id="feed-container" class="flex-1 overflow-y-auto custom-scrollbar p-5 pb-32 max-w-7xl mx-auto w-full">
+    <!-- MAIN CONTAINER SIN SCROLLBAR VISIBLE -->
+    <main id="feed-container" class="flex-1 overflow-y-auto custom-scrollbar p-5 pb-32 max-w-7xl mx-auto w-full">
         <div class="flex justify-center items-center h-40"><span class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></span></div>
     </main>
 
-    <button onclick="abrirModalNueva()" class="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 flex justify-center items-center active:scale-90 transition-all z-50 border border-indigo-500">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+    <!-- BOTÓN ACCIÓN FLOTANTE (FAB) -->
+    <button onclick="abrirModalNueva()" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-tr from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-2xl shadow-lg shadow-indigo-600/30 flex justify-center items-center active:scale-90 transition-all duration-200 z-50 border border-indigo-400/30 group">
+        <svg class="w-6 h-6 transform group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
     </button>
 
-    <div id="modal-nueva" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex flex-col justify-end transition-opacity opacity-0">
-        <div class="bg-white dark:bg-slate-800 w-full md:w-[500px] md:mx-auto md:mb-6 rounded-t-3xl md:rounded-3xl shadow-2xl transform translate-y-full transition-transform duration-300 max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-700" id="modal-content">
-            <div class="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700 shrink-0">
-                <h2 class="text-xl font-black text-slate-800 dark:text-white">Reportar Novedad</h2>
-                <button onclick="cerrarModalNueva()" class="p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+    <!-- MODAL REPORTAR NOVEDAD -->
+    <div id="modal-nueva" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[100] hidden flex flex-col justify-end transition-opacity opacity-0 duration-200">
+        <div class="bg-white dark:bg-slate-900 w-full md:w-[500px] md:mx-auto md:mb-6 rounded-t-3xl md:rounded-3xl shadow-2xl transform translate-y-full transition-transform duration-250 ease-out max-h-[90vh] flex flex-col border border-slate-200/80 dark:border-slate-800/80" id="modal-content">
+            <div class="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📋</span>
+                    <h2 class="text-lg font-black text-slate-900 dark:text-white">Reportar Novedad</h2>
+                </div>
+                <button onclick="cerrarModalNueva()" class="p-2 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
             
             <form onsubmit="enviarNovedad(event)" class="p-5 flex-1 overflow-y-auto flex flex-col gap-4 custom-scrollbar">
                 
                 <div class="relative">
                     <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Buscar Conductor</label>
-                    <input type="text" id="input-nom" placeholder="Escriba nombre o tractor..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none uppercase shadow-sm transition-all" autocomplete="off" oninput="filtrarChoferes()" onfocus="filtrarChoferes()" required>
+                    <input type="text" id="input-nom" placeholder="Escriba nombre o tractor..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none uppercase shadow-sm transition-all" autocomplete="off" oninput="filtrarChoferes()" onfocus="filtrarChoferes()" required>
                     
-                    <div id="dropdown-choferes" class="hidden absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-2xl max-h-56 overflow-y-auto custom-scrollbar"></div>
+                    <div id="dropdown-choferes" class="hidden absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-56 overflow-y-auto custom-scrollbar"></div>
                 </div>
                 
                 <input type="hidden" id="input-ute">
@@ -71,11 +104,11 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Tractor</label>
-                        <input type="text" id="input-tractor" placeholder="Dominio" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 uppercase outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <input type="text" id="input-tractor" placeholder="Dominio" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 uppercase outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Servicio</label>
-                        <select id="input-srv" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none appearance-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <select id="input-srv" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none appearance-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
                             <option value="LIVIANO">LIVIANO</option><option value="METANOL">METANOL</option><option value="YPF">YPF</option><option value="S/A">OTRO</option>
                         </select>
                     </div>
@@ -83,7 +116,7 @@
 
                 <div>
                     <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Clasificación</label>
-                    <select id="input-tipo" onchange="adaptarFormulario(this.value)" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none appearance-none focus:ring-2 focus:ring-indigo-500 transition-all" required>
+                    <select id="input-tipo" onchange="adaptarFormulario(this.value)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none appearance-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer" required>
                         <option value="" disabled selected>Seleccionar...</option>
                         <option value="BAJA_DIAGRAMA">📅 Baja / Término de Diagrama</option>
                         <option value="CERTIFICACION_UNIDAD">🚚 Certificación de Unidad</option>
@@ -93,16 +126,16 @@
                 </div>
 
                 <div id="div-fecha" class="hidden">
-                    <label class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-1.5 block">Fecha Objetivo / Venc.</label>
-                    <input type="date" id="input-fecha" class="w-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-3 text-sm font-bold text-indigo-900 dark:text-indigo-200 outline-none color-scheme-dark">
+                    <label class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1.5 block">Fecha Objetivo / Venc.</label>
+                    <input type="date" id="input-fecha" class="w-full bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 text-sm font-bold text-indigo-900 dark:text-indigo-200 outline-none">
                 </div>
 
                 <div>
                     <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Detalle / Notas</label>
-                    <textarea id="input-detalle" rows="3" placeholder="Describa el requerimiento..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-medium text-slate-800 dark:text-slate-200 outline-none resize-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    <textarea id="input-detalle" rows="3" placeholder="Describa el requerimiento..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-medium text-slate-800 dark:text-slate-200 outline-none resize-none focus:ring-2 focus:ring-indigo-500 transition-all"></textarea>
                 </div>
 
-                <button type="submit" id="btn-submit" class="mt-2 w-full bg-indigo-600 text-white font-black text-sm uppercase tracking-widest p-4 rounded-xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all">
+                <button type="submit" id="btn-submit" class="mt-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs uppercase tracking-widest p-4 rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all">
                     Publicar Novedad
                 </button>
             </form>
@@ -112,7 +145,7 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         // 👉 INICIALIZACIÓN MODO OSCURO
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMatchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
             document.getElementById('icon-moon').classList.add('hidden');
             document.getElementById('icon-sun').classList.remove('hidden');
@@ -150,11 +183,11 @@
             const btnR = document.getElementById('btn-resueltos');
             
             if(vista === 'pendientes') {
-                btnP.className = 'flex-1 py-2 bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-lg shadow transition-all';
-                btnR.className = 'flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all';
+                btnP.className = 'flex-1 py-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center gap-1.5';
+                btnR.className = 'flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 flex items-center justify-center gap-1.5';
             } else {
-                btnR.className = 'flex-1 py-2 bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-lg shadow transition-all';
-                btnP.className = 'flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all';
+                btnR.className = 'flex-1 py-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center gap-1.5';
+                btnP.className = 'flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 flex items-center justify-center gap-1.5';
             }
             renderizar();
         }
@@ -164,40 +197,26 @@
             return (new Date() - new Date(isoStr)) < (24 * 60 * 60 * 1000);
         }
 
-// ==============================================================
-        // 🔄 MOTOR DE RENDERS Y CONTROL BINARIO (Trello-Style)
         // ==============================================================
-
-// ==============================================================
-        // 🔄 MOTOR DE RENDERS (CARRUSEL HORIZONTAL CSS NATIVO)
+        // 🔄 MOTOR DE RENDERS (KANBAN / CARRUSEL + AUTO-SCROLL RÁPIDO)
         // ==============================================================
-
-// ==============================================================
-        // 🔄 MOTOR DE RENDERS (KANBAN POR CATEGORÍA + AUTO-SCROLL)
-        // ==============================================================
-        let autoScrollIntervals = []; // Almacena los intervalos de animación para limpiarlos
+        let autoScrollIntervals = [];
 
         function renderizar() {
             const container = document.getElementById('feed-container');
             
-            // Limpiamos intervalos anteriores si re-renderizamos
             autoScrollIntervals.forEach(clearInterval);
             autoScrollIntervals = [];
 
-            // Separamos estrictamente por el estado booleano "resuelto"
             const activas = RAM_Novedades.filter(n => !n.resuelto);
             const resueltasTodas = RAM_Novedades.filter(n => n.resuelto);
 
-            // ==============================================================
-            // 🏢 FILTRO 1: PESTAÑA RESUELTOS (HISTORIAL COMPLETO)
-            // ==============================================================
             if (vistaActual === 'resueltos') {
                 if (resueltasTodas.length === 0) {
-                    container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Sin historial de resueltos</span></div>`;
+                    container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-14 h-14 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-extrabold tracking-widest uppercase text-xs">Sin historial de resueltos</span></div>`;
                     return;
                 }
 
-                // Los resueltos sí los dejamos en un Grid normal porque es un archivo histórico
                 const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
                 let htmlResueltos = `<div class="${gridClass}">`;
                 resueltasTodas.forEach(n => { htmlResueltos += generarHtmlCard(n); });
@@ -207,33 +226,28 @@
                 return;
             }
 
-            // ==============================================================
-            // 📅 FILTRO 2: PESTAÑA PENDIENTES (SÓLO ACTIVAS EN CARRUSELES)
-            // ==============================================================
             if (activas.length === 0) {
-                container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-black tracking-widest uppercase text-xs">Bandeja Limpia ✨</span></div>`;
+                container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-14 h-14 mb-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-extrabold tracking-widest uppercase text-xs text-slate-600 dark:text-slate-400">Bandeja Limpia ✨</span></div>`;
                 return;
             }
 
-            // Agrupamos las novedades por tipo
             const categorias = {
-                'BAJA_DIAGRAMA': { titulo: '📅 Baja / Término de Diagrama', colorText: 'text-orange-600 dark:text-orange-400', items: [] },
-                'CERTIFICACION_UNIDAD': { titulo: '🚚 Certificaciones de Unidad', colorText: 'text-blue-600 dark:text-blue-400', items: [] },
-                'EXAMEN_CHOFER': { titulo: '🩺 Exámenes / Vencimientos', colorText: 'text-rose-600 dark:text-rose-400', items: [] },
-                'REPARACION': { titulo: '🔧 Reparaciones Requeridas', colorText: 'text-slate-600 dark:text-slate-400', items: [] }
+                'BAJA_DIAGRAMA': { titulo: '📅 Baja / Término de Diagrama', colorText: 'text-amber-600 dark:text-amber-400', badgeBg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300', items: [] },
+                'CERTIFICACION_UNIDAD': { titulo: '🚚 Certificaciones de Unidad', colorText: 'text-blue-600 dark:text-blue-400', badgeBg: 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300', items: [] },
+                'EXAMEN_CHOFER': { titulo: '🩺 Exámenes / Vencimientos', colorText: 'text-rose-600 dark:text-rose-400', badgeBg: 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300', items: [] },
+                'REPARACION': { titulo: '🔧 Reparaciones Requeridas', colorText: 'text-slate-700 dark:text-slate-300', badgeBg: 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300', items: [] }
             };
 
             activas.forEach(n => {
                 if (categorias[n.tipo_novedad]) categorias[n.tipo_novedad].items.push(n);
-                else categorias['REPARACION'].items.push(n); // Fallback por si acaso
+                else categorias['REPARACION'].items.push(n);
             });
 
             let htmlFinal = '';
-            let idsCarruseles = []; // Guardamos los IDs para inyectarles el Auto-Scroll
+            let idsCarruseles = [];
 
-            const carouselClass = "grid grid-flow-col auto-cols-[85%] md:auto-cols-[45%] lg:auto-cols-[31%] gap-5 overflow-x-auto snap-x snap-mandatory pb-6 pt-2 custom-scrollbar items-stretch w-full scroll-smooth";
+            const carouselClass = "grid grid-flow-col auto-cols-[88%] sm:auto-cols-[55%] md:auto-cols-[42%] lg:auto-cols-[31%] gap-5 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 custom-scrollbar items-stretch w-full scroll-smooth";
 
-            // Generamos una fila por cada categoría que tenga items
             Object.keys(categorias).forEach((key, index) => {
                 const cat = categorias[key];
                 if (cat.items.length > 0) {
@@ -242,11 +256,11 @@
 
                     htmlFinal += `
                     <section class="w-full mb-8">
-                        <div class="w-full mb-2 shrink-0 flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                        <div class="w-full mb-3 shrink-0 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-2">
                             <h2 class="text-xs font-black uppercase tracking-widest ${cat.colorText} flex items-center gap-2">
                                 ${cat.titulo}
                             </h2>
-                            <span class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 px-2 py-0.5 rounded text-[10px] font-black">${cat.items.length}</span>
+                            <span class="${cat.badgeBg} px-2.5 py-0.5 rounded-full text-[10px] font-black">${cat.items.length}</span>
                         </div>
                         <div id="${carouselId}" class="${carouselClass}">`;
                     
@@ -258,99 +272,97 @@
 
             container.innerHTML = htmlFinal;
 
-            // 👉 INYECTAR LÓGICA DE AUTO-SCROLL DESPUÉS DE RENDERIZAR
             setTimeout(() => {
                 idsCarruseles.forEach(id => inicializarAutoScroll(id));
-            }, 100);
+            }, 80);
         }
 
         // ==============================================================
-        // 🚄 MOTOR DE AUTO-SCROLL (CON PAUSA AL HOVER/TOUCH)
+        // 🚄 MOTOR DE AUTO-SCROLL ÁGIL (SIN BARRAS VISIBLES)
         // ==============================================================
         function inicializarAutoScroll(containerId) {
             const track = document.getElementById(containerId);
             if (!track) return;
 
             let isPaused = false;
-            let scrollSpeed = 1.5; // Píxeles por iteración
+            let scrollSpeed = 2.5; // Velocidad agilizada por ciclo
 
-            // Pausa cuando el mouse está encima o el usuario toca la pantalla
             track.addEventListener('mouseenter', () => isPaused = true);
             track.addEventListener('mouseleave', () => isPaused = false);
             track.addEventListener('touchstart', () => isPaused = true, {passive: true});
             track.addEventListener('touchend', () => {
-                setTimeout(() => isPaused = false, 1500); // Demora la reanudación en móviles
+                setTimeout(() => isPaused = false, 1200);
             }, {passive: true});
 
             const interval = setInterval(() => {
                 if (isPaused) return;
 
-                // Verificamos si el carrusel necesita hacer scroll (si el contenido es más ancho que la pantalla)
                 if (track.scrollWidth > track.clientWidth) {
                     track.scrollLeft += scrollSpeed;
 
-                    // Si llega al final, vuelve al principio suavemente
                     if (Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth) {
-                        isPaused = true; // Pausamos un segundo al final
+                        isPaused = true;
                         setTimeout(() => {
                             track.scrollTo({ left: 0, behavior: 'smooth' });
-                            setTimeout(() => isPaused = false, 1000); // Reanuda tras volver al inicio
-                        }, 2000);
+                            setTimeout(() => isPaused = false, 800);
+                        }, 1500);
                     }
                 }
-            }, 30); // ~33 FPS
+            }, 25);
 
             autoScrollIntervals.push(interval);
         }
-                // 👉 FUNCIÓN AUXILIAR AISLADA PARA CONSTRUIR EL HTML DE LA CARD
+
+        // ==============================================================
+        // 🎨 CONSTRUCCIÓN DE LA CARD DE NOVEDAD
+        // ==============================================================
         function generarHtmlCard(n) {
-            let cfg = { icon: '📌', bg: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-100 dark:border-indigo-800/50' };
-            if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-900 dark:text-orange-200', border: 'border-orange-200 dark:border-orange-800/50' };
-            if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { icon: '🚚', bg: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-900 dark:text-blue-200', border: 'border-blue-200 dark:border-blue-800/50' };
-            if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { icon: '🩺', bg: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-200 dark:border-rose-800/50' };
-            if (n.tipo_novedad === 'REPARACION') cfg = { icon: '🔧', bg: 'bg-slate-100 dark:bg-slate-800/50', text: 'text-slate-800 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-700' };
+            let cfg = { icon: '📌', bg: 'bg-indigo-50/70 dark:bg-indigo-950/40', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-100 dark:border-indigo-900/40' };
+            if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-amber-50/70 dark:bg-amber-950/40', text: 'text-amber-900 dark:text-amber-200', border: 'border-amber-200/60 dark:border-amber-900/40' };
+            if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { icon: '🚚', bg: 'bg-blue-50/70 dark:bg-blue-950/40', text: 'text-blue-900 dark:text-blue-200', border: 'border-blue-200/60 dark:border-blue-900/40' };
+            if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { icon: '🩺', bg: 'bg-rose-50/70 dark:bg-rose-950/40', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-200/60 dark:border-rose-900/40' };
+            if (n.tipo_novedad === 'REPARACION') cfg = { icon: '🔧', bg: 'bg-slate-100/80 dark:bg-slate-800/60', text: 'text-slate-800 dark:text-slate-200', border: 'border-slate-200 dark:border-slate-700/60' };
 
             let cardClass = n.resuelto 
-                ? "bg-emerald-50/40 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-900/40 opacity-70 grayscale-[0.2] scale-[0.99]" 
-                : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm";
+                ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/40 opacity-75 grayscale-[0.1]" 
+                : "bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700";
 
-            // 👉 NOTA: Se agregó 'snap-start' y 'h-full' para que funcionen perfecto en el carrusel
             return `
-            <article id="card-${n.id}" class="snap-start rounded-2xl p-5 border relative overflow-hidden transition-all duration-500 w-full flex flex-col h-full ${cardClass}">
-                <div class="flex justify-between items-start mb-4">
+            <article id="card-${n.id}" class="snap-start rounded-2xl p-5 border relative overflow-hidden transition-all duration-300 w-full flex flex-col h-full ${cardClass}">
+                <div class="flex justify-between items-start mb-3.5">
                     <div class="flex flex-col min-w-0 pr-3">
-                        <h3 class="font-black ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-lg leading-tight uppercase truncate w-full">${n.nom}</h3>
+                        <h3 class="font-extrabold ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-base sm:text-lg leading-tight uppercase truncate w-full tracking-tight">${n.nom}</h3>
                         <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase border border-slate-200 dark:border-slate-600">${n.srv}</span>
-                            <span class="text-xs font-bold ${n.resuelto ? 'text-emerald-700 dark:text-emerald-500' : 'text-indigo-600 dark:text-indigo-400'} tracking-wide">${n.tractor}</span>
+                            <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-md text-[9px] font-black tracking-widest uppercase border border-slate-200 dark:border-slate-700">${n.srv}</span>
+                            <span class="text-xs font-extrabold ${n.resuelto ? 'text-emerald-700 dark:text-emerald-500' : 'text-indigo-600 dark:text-indigo-400'} tracking-wide">${n.tractor}</span>
                         </div>
                     </div>
-                    <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-8 h-8 rounded-lg border-2 shrink-0 transition-colors shadow-sm focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500 border-emerald-500 dark:bg-emerald-600 dark:border-emerald-600 cursor-default' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 hover:border-emerald-400 dark:hover:border-emerald-500 cursor-pointer'}">
-                        ${n.resuelto ? `<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : ''}
+                    <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-8 h-8 rounded-xl border shrink-0 transition-all duration-150 shadow-sm focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500 border-emerald-500 text-white cursor-default' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-slate-400 dark:text-slate-500 cursor-pointer active:scale-90'}" title="${n.resuelto ? 'Resuelto' : 'Marcar como resuelto'}">
+                        <svg class="w-4 h-4 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
                     </button>
                 </div>
 
                 <div class="${cfg.bg} ${cfg.border} border rounded-xl p-3.5 mt-auto">
                     <div class="flex justify-between items-center border-b border-black/5 dark:border-white/5 pb-2 mb-2 gap-2">
-                        <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0">${cfg.icon} ${String(n.tipo_novedad).replace('_', ' ')}</span>
-                        ${n.fecha_objetivo ? `<span class="bg-white/80 dark:bg-slate-950/50 px-2 py-0.5 rounded text-[9px] font-black ${cfg.text} shadow-sm whitespace-nowrap">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
+                        <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0">${cfg.icon} ${String(n.tipo_novedad).replace(/_/g, ' ')}</span>
+                        ${n.fecha_objetivo ? `<span class="bg-white/90 dark:bg-slate-950/70 px-2 py-0.5 rounded-md text-[9px] font-black ${cfg.text} shadow-2xs whitespace-nowrap border border-black/5 dark:border-white/5">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
                     </div>
-                    <p class="${cfg.text} text-xs font-medium leading-relaxed whitespace-pre-wrap break-words">${n.detalle}</p>
+                    <p class="${cfg.text} text-xs font-semibold leading-relaxed whitespace-pre-wrap break-words">${n.detalle}</p>
                 </div>
             </article>`;
         }
-                // ==============================================================
-        // ⚡ ACCIÓN DE RESOLVER CON DESVANECIMIENTO INMEDIATO
+
+        // ==============================================================
+        // ⚡ ACCIÓN DE RESOLVER CON SALIDA ULTRARRÁPIDA HACIA LOS BORDES (150ms)
         // ==============================================================
         function resolver(id) {
             if (vistaActual === 'resueltos') return;
             
             const card = document.getElementById(`card-${id}`);
             if (card) {
-                // Inyectamos la animación de salida hacia la derecha
+                // Salida ultrarrápida hacia el borde derecho
                 card.classList.add('fade-out');
                 
-                // Esperamos los 300ms de la transición CSS para modificar los datos y limpiar el DOM
                 setTimeout(() => {
                     let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
                     if (idx > -1) {
@@ -358,7 +370,7 @@
                         RAM_Novedades[idx].fecha_resolucion = new Date().toISOString();
                     }
                     renderizar();
-                }, 300);
+                }, 150); // Reducido a 150ms para salida casi instantánea
             } else {
                 let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
                 if (idx > -1) {
@@ -368,49 +380,14 @@
                 renderizar();
             }
 
-            // Despachamos la actualización persistente al servidor en segundo plano
             fetch(`${API_URL}/api/novedades/actualizar`, { 
                 method: 'POST', 
                 headers: { "Content-Type": "application/json" }, 
                 body: JSON.stringify({ action: 'resolver', id_novedad: id }) 
             }).catch(e => console.error("Error al persistir resolución:", e));
-        }        // 👉 FUNCIÓN AUXILIAR AISLADA PARA CONSTRUIRE EL HTML DE LA CARD
-        function generarHtmlCard(n) {
-            let cfg = { icon: '📌', bg: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-100 dark:border-indigo-800/50' };
-            if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-900 dark:text-orange-200', border: 'border-orange-200 dark:border-orange-800/50' };
-            if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { icon: '🚚', bg: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-900 dark:text-blue-200', border: 'border-blue-200 dark:border-blue-800/50' };
-            if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { icon: '🩺', bg: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-200 dark:border-rose-800/50' };
-            if (n.tipo_novedad === 'REPARACION') cfg = { icon: '🔧', bg: 'bg-slate-100 dark:bg-slate-800/50', text: 'text-slate-800 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-700' };
-
-            let cardClass = n.resuelto 
-                ? "bg-emerald-50/40 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-900/40 opacity-70 grayscale-[0.2] scale-[0.99]" 
-                : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm";
-
-            return `
-            <article id="card-${n.id}" class="rounded-2xl p-5 border relative overflow-hidden transition-all duration-500 w-full flex flex-col ${cardClass}">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex flex-col min-w-0 pr-3">
-                        <h3 class="font-black ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-lg leading-tight uppercase truncate w-full">${n.nom}</h3>
-                        <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase border border-slate-200 dark:border-slate-600">${n.srv}</span>
-                            <span class="text-xs font-bold ${n.resuelto ? 'text-emerald-700 dark:text-emerald-500' : 'text-indigo-600 dark:text-indigo-400'} tracking-wide">${n.tractor}</span>
-                        </div>
-                    </div>
-                    <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-8 h-8 rounded-lg border-2 shrink-0 transition-colors shadow-sm focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500 border-emerald-500 dark:bg-emerald-600 dark:border-emerald-600 cursor-default' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 hover:border-emerald-400 dark:hover:border-emerald-500 cursor-pointer'}">
-                        ${n.resuelto ? `<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : ''}
-                    </button>
-                </div>
-
-                <div class="${cfg.bg} ${cfg.border} border rounded-xl p-3.5 mt-auto">
-                    <div class="flex justify-between items-center border-b border-black/5 dark:border-white/5 pb-2 mb-2 gap-2">
-                        <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0">${cfg.icon} ${String(n.tipo_novedad).replace('_', ' ')}</span>
-                        ${n.fecha_objetivo ? `<span class="bg-white/80 dark:bg-slate-950/50 px-2 py-0.5 rounded text-[9px] font-black ${cfg.text} shadow-sm whitespace-nowrap">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
-                    </div>
-                    <p class="${cfg.text} text-xs font-medium leading-relaxed whitespace-pre-wrap break-words">${n.detalle}</p>
-                </div>
-            </article>`;
         }
-                // AUTOCOMPLETADO
+
+        // AUTOCOMPLETADO
         function filtrarChoferes() {
             const input = document.getElementById('input-nom');
             const drop = document.getElementById('dropdown-choferes');
@@ -423,14 +400,14 @@
             let html = '';
             filtrados.forEach(c => {
                 html += `
-                <div onclick="seleccionarAutocompletado('${c.nom.replace(/'/g, "\\'")}', '${c.tractor || ''}', '${c.srv || 'S/A'}', '${c.n_ute || ''}')" class="p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700 cursor-pointer transition-colors flex justify-between items-center">
+                <div onclick="seleccionarAutocompletado('${c.nom.replace(/'/g, "\\'")}', '${c.tractor || ''}', '${c.srv || 'S/A'}', '${c.n_ute || ''}')" class="p-3 border-b border-slate-100 dark:border-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-800/80 cursor-pointer transition-colors flex justify-between items-center">
                     <div class="flex flex-col truncate pr-2">
-                        <span class="font-black text-sm text-slate-800 dark:text-slate-200 truncate">${c.nom}</span>
+                        <span class="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate">${c.nom}</span>
                         <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">UTE: ${c.n_ute || '-'}</span>
                     </div>
                     <div class="flex flex-col items-end shrink-0">
                         <span class="font-black text-indigo-600 dark:text-indigo-400 text-xs tracking-wide">${c.tractor || 'S/D'}</span>
-                        <span class="text-[9px] font-black bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded mt-1 uppercase border border-slate-200 dark:border-slate-700">${c.srv || 'S/A'}</span>
+                        <span class="text-[9px] font-black bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded mt-1 uppercase border border-slate-200 dark:border-slate-800">${c.srv || 'S/A'}</span>
                     </div>
                 </div>`;
             });
@@ -452,34 +429,21 @@
             if (drop && !drop.contains(e.target) && e.target.id !== 'input-nom') drop.classList.add('hidden');
         });
 
-        // MODAL Y LÓGICA
-        function resolver(id) {
-            if (vistaActual === 'resueltos') return;
-            let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
-            if(idx > -1) { RAM_Novedades[idx].resuelto = true; RAM_Novedades[idx].fecha_resolucion = new Date().toISOString(); }
-            
-            const card = document.getElementById(`card-${id}`);
-            if(card) {
-                // Animación de salida antes de renderizar
-                card.classList.add('fade-out');
-                setTimeout(() => renderizar(), 300);
-            } else { renderizar(); }
-
-            fetch(`${API_URL}/api/novedades/actualizar`, { method: 'POST', headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: 'resolver', id_novedad: id }) }).catch(e => console.error(e));
-        }
-
+        // MODAL Y LÓGICA DE ENVÍO
         function abrirModalNueva() {
-            document.getElementById('modal-nueva').classList.remove('hidden');
+            const modal = document.getElementById('modal-nueva');
+            modal.classList.remove('hidden');
             setTimeout(() => {
-                document.getElementById('modal-nueva').classList.remove('opacity-0');
+                modal.classList.remove('opacity-0');
                 document.getElementById('modal-content').classList.remove('translate-y-full');
             }, 10);
         }
 
         function cerrarModalNueva() {
-            document.getElementById('modal-nueva').classList.add('opacity-0');
+            const modal = document.getElementById('modal-nueva');
+            modal.classList.add('opacity-0');
             document.getElementById('modal-content').classList.add('translate-y-full');
-            setTimeout(() => document.getElementById('modal-nueva').classList.add('hidden'), 300);
+            setTimeout(() => modal.classList.add('hidden'), 250);
         }
 
         function adaptarFormulario(tipo) {
