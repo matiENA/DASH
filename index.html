@@ -53,10 +53,14 @@
                 </div>
             </div>
             
-            <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700/80 transition-all focus:outline-none border border-slate-200/60 dark:border-slate-700/60 active:scale-95 shadow-sm" title="Alternar Modo Oscuro">
-                <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-            </button>
+            <div class="flex items-center gap-2.5">
+                <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700/80 transition-all focus:outline-none border border-slate-200/60 dark:border-slate-700/60 active:scale-95 shadow-sm" title="Alternar Modo Oscuro">
+                    <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+
+                <div id="auth-container"></div>
+            </div>
         </div>
         
         <div class="mt-4 flex bg-slate-200/60 dark:bg-slate-900/90 p-1 rounded-xl shadow-inner w-full sm:w-auto max-w-md mx-auto border border-slate-300/40 dark:border-slate-800/80">
@@ -139,6 +143,33 @@
 
                 <button type="submit" id="btn-submit" class="mt-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs uppercase tracking-widest p-4 rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all">
                     Publicar Novedad
+                </button>
+            </form>
+    <!-- MODAL INICIAR SESIÓN -->
+    <div id="modal-login" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[110] hidden flex flex-col justify-center items-center p-4 transition-opacity opacity-0 duration-200">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl p-6 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-4">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🔐</span>
+                    <h2 class="text-lg font-black text-slate-900 dark:text-white">Iniciar Sesión</h2>
+                </div>
+                <button onclick="cerrarModalLogin()" class="p-2 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            
+            <form onsubmit="ejecutarLogin(event)" class="flex flex-col gap-3">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 block">Usuario</label>
+                    <input type="text" id="login-user" placeholder="Escriba su usuario..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none uppercase shadow-sm" required>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 block">Contraseña</label>
+                    <input type="password" id="login-pass" placeholder="••••••••" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm" required>
+                </div>
+                
+                <p id="login-error" class="text-xs font-bold text-rose-500 hidden text-center mt-1"></p>
+
+                <button type="submit" id="btn-login-submit" class="mt-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs uppercase tracking-widest p-3.5 rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all">
+                    Entrar
                 </button>
             </form>
         </div>
@@ -373,11 +404,14 @@
                         </div>
                         <p class="${cfg.text} text-xs font-semibold leading-relaxed whitespace-pre-wrap break-words mb-2">${n.detalle}</p>
                     </div>
-                    ${timeFormatted ? `<div class="flex justify-end items-center pt-1.5 border-t border-black/5 dark:border-white/5 mt-1">
-                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-wider flex items-center gap-1">
-                            🕒 ${timeFormatted}
+                    <div class="flex justify-between items-center pt-1.5 border-t border-black/5 dark:border-white/5 mt-1 text-[9px] font-bold text-slate-400 dark:text-slate-500">
+                        <span class="truncate pr-2 uppercase flex items-center gap-1" title="Creador">
+                            👤 ${n.creador || n.usuario || 'Anónimo'}
                         </span>
-                    </div>` : ''}
+                        ${timeFormatted ? `<span class="shrink-0 flex items-center gap-1 tracking-wider">
+                            🕒 ${timeFormatted}
+                        </span>` : ''}
+                    </div>
                 </div>
             </article>`;
         }
@@ -484,8 +518,112 @@
             if (dropTractor && !dropTractor.contains(e.target) && e.target.id !== 'input-tractor') dropTractor.classList.add('hidden');
         });
 
+        // ==============================================================
+        // 🔐 SISTEMA DE AUTENTICACIÓN Y SESIONES PERSISTENTES
+        // ==============================================================
+        let callbackPostLogin = null;
+
+        function obtenerUsuarioSesion() {
+            try {
+                const data = localStorage.getItem('dash_user');
+                return data ? JSON.parse(data) : null;
+            } catch(e) { return null; }
+        }
+
+        function checkAuthUI() {
+            const container = document.getElementById('auth-container');
+            if (!container) return;
+            
+            const sesion = obtenerUsuarioSesion();
+            if (sesion && sesion.usuario) {
+                container.innerHTML = `
+                    <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                        <span class="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase flex items-center gap-1">
+                            <span>👤</span> ${sesion.usuario}
+                        </span>
+                        <button onclick="cerrarSesion()" class="text-[10px] font-extrabold text-slate-400 hover:text-rose-500 transition-colors uppercase ml-1" title="Cerrar Sesión">Salir</button>
+                    </div>`;
+            } else {
+                container.innerHTML = `
+                    <button onclick="abrirModalLogin()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs transition-all shadow-sm active:scale-95 flex items-center gap-1.5">
+                        🔑 <span>Entrar</span>
+                    </button>`;
+            }
+        }
+
+        function abrirModalLogin(callback = null) {
+            callbackPostLogin = callback;
+            const modal = document.getElementById('modal-login');
+            document.getElementById('login-error').classList.add('hidden');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        function cerrarModalLogin() {
+            const modal = document.getElementById('modal-login');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        function ejecutarLogin(e) {
+            e.preventDefault();
+            const userIn = document.getElementById('login-user').value.trim();
+            const passIn = document.getElementById('login-pass').value.trim();
+            const btn = document.getElementById('btn-login-submit');
+            const errP = document.getElementById('login-error');
+            
+            errP.classList.add('hidden');
+            btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>`;
+
+            fetch(`${API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ usuario: userIn, password: passIn })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.usuario) {
+                    localStorage.setItem('dash_user', JSON.stringify({ usuario: data.usuario, rol: data.rol || 'USER' }));
+                    checkAuthUI();
+                    cerrarModalLogin();
+                    document.getElementById('login-user').value = '';
+                    document.getElementById('login-pass').value = '';
+
+                    if (callbackPostLogin === 'abrirModalNueva') {
+                        abrirModalNueva();
+                    }
+                    callbackPostLogin = null;
+                } else {
+                    errP.innerText = data.error || 'Usuario o contraseña incorrectos';
+                    errP.classList.remove('hidden');
+                }
+            })
+            .catch(err => {
+                errP.innerText = 'Error de conexión con el servidor';
+                errP.classList.remove('hidden');
+            })
+            .finally(() => {
+                btn.innerHTML = 'ENTRAR';
+            });
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('dash_user');
+            checkAuthUI();
+        }
+
+        checkAuthUI();
+
         // MODAL Y LÓGICA DE ENVÍO
         function abrirModalNueva() {
+            const sesion = obtenerUsuarioSesion();
+            if (!sesion || !sesion.usuario) {
+                abrirModalLogin('abrirModalNueva');
+                return;
+            }
+
             const modal = document.getElementById('modal-nueva');
             modal.classList.remove('hidden');
             setTimeout(() => {
@@ -507,6 +645,9 @@
 
         function enviarNovedad(e) {
             e.preventDefault();
+            const sesion = obtenerUsuarioSesion();
+            const creadorNom = sesion && sesion.usuario ? sesion.usuario : 'Anónimo';
+
             const btn = document.getElementById('btn-submit');
             btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>`;
             
@@ -517,7 +658,8 @@
                 n_ute: document.getElementById('input-ute').value || 'S/D',
                 tipo_novedad: document.getElementById('input-tipo').value,
                 fecha_objetivo: document.getElementById('input-fecha').value,
-                detalle: document.getElementById('input-detalle').value
+                detalle: document.getElementById('input-detalle').value,
+                creador: creadorNom
             };
 
             fetch(`${API_URL}/api/novedades/actualizar`, {
