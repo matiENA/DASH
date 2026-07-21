@@ -61,7 +61,7 @@
         
         <div class="mt-4 flex bg-slate-200/60 dark:bg-slate-900/90 p-1 rounded-xl shadow-inner w-full sm:w-auto max-w-md mx-auto border border-slate-300/40 dark:border-slate-800/80">
             <button onclick="cambiarVista('pendientes')" id="btn-pendientes" class="flex-1 py-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center gap-1.5">
-                <span>🔥</span> Pendientes
+                <span></span> Pendientes
             </button>
             <button onclick="cambiarVista('resueltos')" id="btn-resueltos" class="flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 flex items-center justify-center gap-1.5">
                 <span>✅</span> Resueltos
@@ -94,17 +94,18 @@
                 
                 <div class="relative">
                     <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Buscar Conductor</label>
-                    <input type="text" id="input-nom" placeholder="Escriba nombre o tractor..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none uppercase shadow-sm transition-all" autocomplete="off" oninput="filtrarChoferes()" onfocus="filtrarChoferes()" required>
+                    <input type="text" id="input-nom" placeholder="Escriba nombre o tractor..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none uppercase shadow-sm transition-all" autocomplete="off" oninput="filtrarChoferes('nom')" onfocus="filtrarChoferes('nom')" required>
                     
-                    <div id="dropdown-choferes" class="hidden absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-56 overflow-y-auto custom-scrollbar"></div>
+                    <div id="dropdown-choferes" class="hidden absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar"></div>
                 </div>
                 
                 <input type="hidden" id="input-ute">
                 
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
+                    <div class="relative">
                         <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Tractor</label>
-                        <input type="text" id="input-tractor" placeholder="Dominio" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 uppercase outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <input type="text" id="input-tractor" placeholder="Dominio" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 uppercase outline-none focus:ring-2 focus:ring-indigo-500 transition-all" autocomplete="off" oninput="filtrarChoferes('tractor')" onfocus="filtrarChoferes('tractor')">
+                        <div id="dropdown-tractores" class="hidden absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar"></div>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Servicio</label>
@@ -118,6 +119,7 @@
                     <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Clasificación</label>
                     <select id="input-tipo" onchange="adaptarFormulario(this.value)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none appearance-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer" required>
                         <option value="" disabled selected>Seleccionar...</option>
+                        <option value="EN_SERVICIO">🟢 En Servicio</option>
                         <option value="BAJA_DIAGRAMA">📅 Baja / Término de Diagrama</option>
                         <option value="CERTIFICACION_UNIDAD">🚚 Certificación de Unidad</option>
                         <option value="EXAMEN_CHOFER">🩺 Exámenes / Vencimientos</option>
@@ -232,6 +234,7 @@
             }
 
             const categorias = {
+                'EN_SERVICIO': { titulo: '🟢 En Servicio / Operativo', colorText: 'text-emerald-600 dark:text-emerald-400', badgeBg: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300', items: [] },
                 'BAJA_DIAGRAMA': { titulo: '📅 Baja / Término de Diagrama', colorText: 'text-amber-600 dark:text-amber-400', badgeBg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300', items: [] },
                 'CERTIFICACION_UNIDAD': { titulo: '🚚 Certificaciones de Unidad', colorText: 'text-blue-600 dark:text-blue-400', badgeBg: 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300', items: [] },
                 'EXAMEN_CHOFER': { titulo: '🩺 Exámenes / Vencimientos', colorText: 'text-rose-600 dark:text-rose-400', badgeBg: 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300', items: [] },
@@ -335,6 +338,7 @@
         // ==============================================================
         function generarHtmlCard(n) {
             let cfg = { icon: '📌', bg: 'bg-indigo-50/70 dark:bg-indigo-950/40', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-100 dark:border-indigo-900/40' };
+            if (n.tipo_novedad === 'EN_SERVICIO') cfg = { icon: '🟢', bg: 'bg-emerald-50/70 dark:bg-emerald-950/40', text: 'text-emerald-900 dark:text-emerald-200', border: 'border-emerald-200/60 dark:border-emerald-900/40' };
             if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-amber-50/70 dark:bg-amber-950/40', text: 'text-amber-900 dark:text-amber-200', border: 'border-amber-200/60 dark:border-amber-900/40' };
             if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { icon: '🚚', bg: 'bg-blue-50/70 dark:bg-blue-950/40', text: 'text-blue-900 dark:text-blue-200', border: 'border-blue-200/60 dark:border-blue-900/40' };
             if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { icon: '🩺', bg: 'bg-rose-50/70 dark:bg-rose-950/40', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-200/60 dark:border-rose-900/40' };
@@ -386,7 +390,6 @@
             
             const card = document.getElementById(`card-${id}`);
             if (card) {
-                // Salida ultrarrápida hacia el borde derecho
                 card.classList.add('fade-out');
                 
                 setTimeout(() => {
@@ -396,7 +399,7 @@
                         RAM_Novedades[idx].fecha_resolucion = new Date().toISOString();
                     }
                     renderizar();
-                }, 150); // Reducido a 150ms para salida casi instantánea
+                }, 150);
             } else {
                 let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
                 if (idx > -1) {
@@ -413,15 +416,35 @@
             }).catch(e => console.error("Error al persistir resolución:", e));
         }
 
-        // AUTOCOMPLETADO
-        function filtrarChoferes() {
-            const input = document.getElementById('input-nom');
-            const drop = document.getElementById('dropdown-choferes');
-            const val = input.value.toLowerCase().trim();
-            if (val.length < 2) { drop.classList.add('hidden'); return; }
+        // AUTOCOMPLETADO Y DESPLIEGUE COMPLETO SCROLLEABLE
+        function filtrarChoferes(origen = 'nom') {
+            const inputNom = document.getElementById('input-nom');
+            const inputTractor = document.getElementById('input-tractor');
+            const dropNom = document.getElementById('dropdown-choferes');
+            const dropTractor = document.getElementById('dropdown-tractores');
+            
+            const isTractor = origen === 'tractor';
+            const input = isTractor ? inputTractor : inputNom;
+            const drop = isTractor ? dropTractor : dropNom;
+            const otherDrop = isTractor ? dropNom : dropTractor;
+            
+            if (otherDrop) otherDrop.classList.add('hidden');
+            if (!drop) return;
 
-            const filtrados = RAM_Flota.filter(c => c.nom.toLowerCase().includes(val) || (c.tractor && c.tractor.toLowerCase().includes(val))).slice(0, 8);
-            if (filtrados.length === 0) { drop.classList.add('hidden'); return; }
+            const val = input.value.toLowerCase().trim();
+
+            let filtrados = RAM_Flota;
+            if (val.length > 0) {
+                filtrados = RAM_Flota.filter(c => 
+                    c.nom.toLowerCase().includes(val) || 
+                    (c.tractor && c.tractor.toLowerCase().includes(val))
+                );
+            }
+
+            if (filtrados.length === 0) {
+                drop.classList.add('hidden');
+                return;
+            }
 
             let html = '';
             filtrados.forEach(c => {
@@ -437,7 +460,8 @@
                     </div>
                 </div>`;
             });
-            drop.innerHTML = html; drop.classList.remove('hidden');
+            drop.innerHTML = html;
+            drop.classList.remove('hidden');
         }
 
         function seleccionarAutocompletado(nom, tractor, srv, ute) {
@@ -447,12 +471,17 @@
             let srvSelect = document.getElementById('input-srv');
             let opciones = Array.from(srvSelect.options).map(o => o.value);
             srvSelect.value = opciones.includes(srv) ? srv : 'S/A';
-            document.getElementById('dropdown-choferes').classList.add('hidden');
+            const dropNom = document.getElementById('dropdown-choferes');
+            const dropTractor = document.getElementById('dropdown-tractores');
+            if (dropNom) dropNom.classList.add('hidden');
+            if (dropTractor) dropTractor.classList.add('hidden');
         }
 
         document.addEventListener('click', (e) => {
-            const drop = document.getElementById('dropdown-choferes');
-            if (drop && !drop.contains(e.target) && e.target.id !== 'input-nom') drop.classList.add('hidden');
+            const dropNom = document.getElementById('dropdown-choferes');
+            const dropTractor = document.getElementById('dropdown-tractores');
+            if (dropNom && !dropNom.contains(e.target) && e.target.id !== 'input-nom') dropNom.classList.add('hidden');
+            if (dropTractor && !dropTractor.contains(e.target) && e.target.id !== 'input-tractor') dropTractor.classList.add('hidden');
         });
 
         // MODAL Y LÓGICA DE ENVÍO
