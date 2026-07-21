@@ -144,34 +144,6 @@
                 <button type="submit" id="btn-submit" class="mt-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs uppercase tracking-widest p-4 rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all">
                     Publicar Novedad
                 </button>
-            </form>
-    <!-- MODAL INICIAR SESIÓN -->
-    <div id="modal-login" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[110] hidden flex flex-col justify-center items-center p-4 transition-opacity opacity-0 duration-200">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl p-6 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-4">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">🔐</span>
-                    <h2 class="text-lg font-black text-slate-900 dark:text-white">Iniciar Sesión</h2>
-                </div>
-                <button onclick="cerrarModalLogin()" class="p-2 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            </div>
-            
-            <form onsubmit="ejecutarLogin(event)" class="flex flex-col gap-3">
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 block">Usuario</label>
-                    <input type="text" id="login-user" placeholder="Escriba su usuario..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none uppercase shadow-sm" required>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 block">Contraseña</label>
-                    <input type="password" id="login-pass" placeholder="••••••••" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm" required>
-                </div>
-                
-                <p id="login-error" class="text-xs font-bold text-rose-500 hidden text-center mt-1"></p>
-
-                <button type="submit" id="btn-login-submit" class="mt-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs uppercase tracking-widest p-3.5 rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all">
-                    Entrar
-                </button>
-            </form>
         </div>
     </div>
 
@@ -514,8 +486,11 @@
         document.addEventListener('click', (e) => {
             const dropNom = document.getElementById('dropdown-choferes');
             const dropTractor = document.getElementById('dropdown-tractores');
+            const dropLogin = document.getElementById('dropdown-login');
+            const authContainer = document.getElementById('auth-container');
             if (dropNom && !dropNom.contains(e.target) && e.target.id !== 'input-nom') dropNom.classList.add('hidden');
             if (dropTractor && !dropTractor.contains(e.target) && e.target.id !== 'input-tractor') dropTractor.classList.add('hidden');
+            if (dropLogin && authContainer && !authContainer.contains(e.target)) dropLogin.classList.add('hidden');
         });
 
         // ==============================================================
@@ -545,26 +520,49 @@
                     </div>`;
             } else {
                 container.innerHTML = `
-                    <button onclick="abrirModalLogin()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs transition-all shadow-sm active:scale-95 flex items-center gap-1.5">
-                        🔑 <span>Entrar</span>
-                    </button>`;
+                    <div class="relative">
+                        <button onclick="toggleDropdownLogin()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer">
+                            🔑 <span>Entrar</span>
+                        </button>
+
+                        <div id="dropdown-login" class="hidden absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 z-50">
+                            <form onsubmit="ejecutarLogin(event)" class="flex flex-col gap-3">
+                                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                                    <span class="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1">🔑 Iniciar Sesión</span>
+                                    <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">DB_Usuarios</span>
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 block">Usuario</label>
+                                    <input type="text" id="login-user" placeholder="Escriba su usuario..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none uppercase shadow-xs" required autocomplete="username">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 block">Contraseña</label>
+                                    <input type="password" id="login-pass" placeholder="••••••••" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs" required autocomplete="current-password">
+                                </div>
+
+                                <p id="login-error" class="text-[10px] font-bold text-rose-500 hidden text-center mt-0.5"></p>
+
+                                <button type="submit" id="btn-login-submit" class="mt-1 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs uppercase tracking-widest p-2.5 rounded-xl shadow-md shadow-indigo-600/20 active:scale-[0.98] transition-all">
+                                    Ingresar
+                                </button>
+                            </form>
+                        </div>
+                    </div>`;
             }
         }
 
-        function abrirModalLogin(callback = null) {
-            callbackPostLogin = callback;
-            const modal = document.getElementById('modal-login');
-            document.getElementById('login-error').classList.add('hidden');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-            }, 10);
-        }
-
-        function cerrarModalLogin() {
-            const modal = document.getElementById('modal-login');
-            modal.classList.add('opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 200);
+        function toggleDropdownLogin(forceOpen = false) {
+            const drop = document.getElementById('dropdown-login');
+            if (!drop) return;
+            if (forceOpen) {
+                drop.classList.remove('hidden');
+            } else {
+                drop.classList.toggle('hidden');
+            }
+            if (!drop.classList.contains('hidden')) {
+                const uIn = document.getElementById('login-user');
+                if (uIn) setTimeout(() => uIn.focus(), 50);
+            }
         }
 
         function ejecutarLogin(e) {
@@ -587,9 +585,6 @@
                 if (data.success && data.usuario) {
                     localStorage.setItem('dash_user', JSON.stringify({ usuario: data.usuario, rol: data.rol || 'USER' }));
                     checkAuthUI();
-                    cerrarModalLogin();
-                    document.getElementById('login-user').value = '';
-                    document.getElementById('login-pass').value = '';
 
                     if (callbackPostLogin === 'abrirModalNueva') {
                         abrirModalNueva();
@@ -605,7 +600,7 @@
                 errP.classList.remove('hidden');
             })
             .finally(() => {
-                btn.innerHTML = 'ENTRAR';
+                if (btn) btn.innerHTML = 'INGRESAR';
             });
         }
 
@@ -620,7 +615,7 @@
         function abrirModalNueva() {
             const sesion = obtenerUsuarioSesion();
             if (!sesion || !sesion.usuario) {
-                abrirModalLogin('abrirModalNueva');
+                toggleDropdownLogin(true);
                 return;
             }
 
