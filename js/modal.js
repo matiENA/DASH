@@ -36,6 +36,12 @@ function adaptarFormulario(tipo) {
     const fInput = document.getElementById('input-fecha');
     if (fInput) fInput.required = false;
 
+    const divCert = document.getElementById('div-certificaciones');
+    if (divCert) {
+        if (tipo === 'CERTIFICACION_UNIDAD') divCert.classList.remove('hidden');
+        else divCert.classList.add('hidden');
+    }
+
     const btn = document.getElementById('btn-submit');
     if (btn) {
         btn.disabled = !tipo;
@@ -50,14 +56,28 @@ function enviarNovedad(e) {
     const btn = document.getElementById('btn-submit');
     if (btn) btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>`;
     
+    let tipoSeleccionado = document.getElementById('input-tipo').value;
+    let extraDetalle = "";
+    
+    if (tipoSeleccionado === 'CERTIFICACION_UNIDAD') {
+        const checks = [];
+        const chkVtv = document.getElementById('check-vtv');
+        const chkMass = document.getElementById('check-mass');
+        if (chkVtv && chkVtv.checked) checks.push('VTV');
+        if (chkMass && chkMass.checked) checks.push('MASS');
+        if (checks.length > 0) {
+            extraDetalle = `[${checks.join(' / ')}]\n\n`;
+        }
+    }
+    
     const payload = {
         nom: document.getElementById('input-nom').value.toUpperCase(),
         tractor: document.getElementById('input-tractor').value.toUpperCase(),
         srv: document.getElementById('input-srv').value,
         n_ute: document.getElementById('input-ute').value || 'S/D',
-        tipo_novedad: document.getElementById('input-tipo').value,
+        tipo_novedad: tipoSeleccionado,
         fecha_objetivo: document.getElementById('input-fecha').value,
-        detalle: document.getElementById('input-detalle').value,
+        detalle: extraDetalle + document.getElementById('input-detalle').value,
         creador: creadorNom
     };
 
@@ -68,6 +88,7 @@ function enviarNovedad(e) {
     }).then(() => {
         cerrarModalNueva(); 
         e.target.reset();
+        adaptarFormulario('');
         if (btn) btn.disabled = true;
     }).finally(() => { 
         if (btn) btn.innerHTML = "PUBLICAR NOVEDAD"; 
@@ -126,8 +147,7 @@ function seleccionarAutocompletado(nom, tractor, srv, ute) {
     document.getElementById('input-tractor').value = tractor;
     document.getElementById('input-ute').value = ute;
     let srvSelect = document.getElementById('input-srv');
-    let opciones = Array.from(srvSelect.options).map(o => o.value);
-    srvSelect.value = opciones.includes(srv) ? srv : 'S/A';
+    srvSelect.value = srv || 'S/A';
     const dropNom = document.getElementById('dropdown-choferes');
     const dropTractor = document.getElementById('dropdown-tractores');
     if (dropNom) dropNom.classList.add('hidden');
