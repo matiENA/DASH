@@ -45,9 +45,8 @@ function renderizar() {
         return;
     }
 
-    if (activas.length === 0) {
-        container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-14 h-14 mb-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-extrabold tracking-widest uppercase text-xs text-slate-600 dark:text-slate-400">Bandeja Limpia ✨</span></div>`;
-        return;
+    if (activas.length === 0 && resueltasTodas.length === 0) { // Sólo si no hay NINGUNA novedad, aunque siembre habrá LIBRES porque forzaremos el render
+        // Se maneja abajo
     }
 
     const categorias = {
@@ -70,7 +69,7 @@ function renderizar() {
 
     Object.keys(categorias).forEach((key, index) => {
         const cat = categorias[key];
-        if (cat.items.length > 0) {
+        if (cat.items.length > 0 || key === 'LIBRES') {
             let carouselId = `carrusel-cat-${index}`;
             idsCarruseles.push(carouselId);
 
@@ -86,9 +85,32 @@ function renderizar() {
                 </div>`;
             }
             
-            htmlFinal += `<div id="${carouselId}" class="${carouselClass}">`;
+            
+            if (key === 'LIBRES') {
+                // Layout especial para LIBRES: flex container para fijar el botón a la izquierda
+                htmlFinal += `
+                <div class="flex items-center gap-4 w-full">
+                    <div class="relative shrink-0 flex items-center justify-center h-[70px]">
+                        <button id="btn-quick-libre" onclick="toggleQuickAddLibre()" class="w-[70px] h-full rounded-xl border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all flex items-center justify-center group focus:outline-none shadow-sm cursor-pointer z-10 bg-slate-900/50" title="Agregar Libre Rápido">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+                        <div id="quick-add-libre-dropdown" class="hidden absolute top-[80px] left-0 w-72 md:w-80 bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-800 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col">
+                            <input type="text" id="quick-input-nom" placeholder="BUSCAR PARA LIBERAR..." class="w-full bg-transparent p-3 text-sm font-black text-slate-800 dark:text-slate-200 outline-none uppercase border-b border-slate-100 dark:border-slate-800 placeholder-slate-400" autocomplete="off" oninput="filtrarQuickChoferes()" onfocus="filtrarQuickChoferes()">
+                            <div id="quick-dropdown-choferes" class="max-h-64 overflow-y-auto custom-scrollbar"></div>
+                        </div>
+                    </div>
+                    <div id="${carouselId}" class="flex-1 ${carouselClass}">`;
+            } else {
+                htmlFinal += `<div id="${carouselId}" class="${carouselClass}">`;
+            }
+
             cat.items.forEach(n => { htmlFinal += generarHtmlCard(n); });
-            htmlFinal += `</div></section>`;
+            
+            if (key === 'LIBRES') {
+                htmlFinal += `</div></div></section>`;
+            } else {
+                htmlFinal += `</div></section>`;
+            }
         }
     });
 
@@ -240,7 +262,100 @@ function resolver(id) {
 
     fetch(`${API_URL}/api/novedades/actualizar`, { 
         method: 'POST', 
-        headers: { "Content-Type": "application/json" }, 
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: 'resolver', id_novedad: id }) 
     }).catch(e => console.error("Error al persistir resolución:", e));
 }
+
+// =========================================================
+// QUICK ADD LIBRE (Acceso Rápido en Vía Primaria)
+// =========================================================
+function toggleQuickAddLibre() {
+    const sesion = obtenerUsuarioSesion();
+    if (!sesion || !sesion.usuario) {
+        toggleDropdownLogin(true);
+        return;
+    }
+    const drop = document.getElementById('quick-add-libre-dropdown');
+    if (!drop) return;
+    
+    if (drop.classList.contains('hidden')) {
+        drop.classList.remove('hidden');
+        document.getElementById('quick-input-nom').focus();
+        filtrarQuickChoferes();
+    } else {
+        drop.classList.add('hidden');
+    }
+}
+
+function filtrarQuickChoferes() {
+    const input = document.getElementById('quick-input-nom');
+    const drop = document.getElementById('quick-dropdown-choferes');
+    if (!drop || !input) return;
+
+    const val = input.value.toLowerCase().trim();
+    let filtrados = RAM_Flota;
+    if (val.length > 0) {
+        filtrados = RAM_Flota.filter(c => 
+            c.nom.toLowerCase().includes(val) || 
+            (c.tractor && c.tractor.toLowerCase().includes(val))
+        );
+    }
+
+    if (filtrados.length === 0) {
+        drop.innerHTML = '<div class="p-3 text-xs text-center text-slate-400 font-bold uppercase">No hay resultados</div>';
+        return;
+    }
+
+    let html = '';
+    filtrados.forEach(c => {
+        html += `
+        <div onclick="submitQuickLibre('${c.nom.replace(/'/g, "\\'")}', '${c.tractor || ''}', '${c.srv || 'S/A'}', '${c.n_ute || ''}')" class="p-3 border-b border-slate-100 dark:border-slate-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 cursor-pointer transition-colors flex justify-between items-center text-left">
+            <div class="flex flex-col truncate pr-2">
+                <span class="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate">${c.nom}</span>
+            </div>
+            <div class="flex flex-col items-end shrink-0">
+                <span class="font-black text-cyan-600 dark:text-cyan-400 text-xs tracking-wide">${c.tractor || 'S/D'}</span>
+            </div>
+        </div>`;
+    });
+    drop.innerHTML = html;
+}
+
+function submitQuickLibre(nom, tractor, srv, n_ute) {
+    const sesion = obtenerUsuarioSesion();
+    const creadorNom = sesion && sesion.usuario ? sesion.usuario : 'Anónimo';
+
+    const payload = {
+        nom: nom,
+        tractor: tractor || '',
+        srv: srv || 'S/A',
+        n_ute: n_ute || 'S/D',
+        tipo_novedad: 'LIBRES',
+        fecha_objetivo: '',
+        detalle: '',
+        creador: creadorNom
+    };
+
+    // UI Feedback: hide drop, maybe show spinner on button?
+    const drop = document.getElementById('quick-add-libre-dropdown');
+    if (drop) drop.classList.add('hidden');
+    const input = document.getElementById('quick-input-nom');
+    if (input) input.value = '';
+
+    fetch(`${API_URL}/api/novedades/actualizar`, {
+        method: 'POST', 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: 'nueva', payload })
+    }).catch(e => console.error("Error guardando Libre rápido:", e));
+}
+
+document.addEventListener('click', (e) => {
+    const quickDrop = document.getElementById('quick-add-libre-dropdown');
+    const quickBtn = document.getElementById('btn-quick-libre');
+    if (quickDrop && quickBtn) {
+        if (!quickDrop.contains(e.target) && !quickBtn.contains(e.target)) {
+            quickDrop.classList.add('hidden');
+        }
+    }
+});
