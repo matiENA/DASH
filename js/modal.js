@@ -7,6 +7,12 @@ function abrirModalNueva() {
 
     const modal = document.getElementById('modal-nueva');
     if (modal) {
+        // Resetear form y desactivar botón al abrir
+        const form = document.querySelector('#modal-nueva form');
+        if (form) form.reset();
+        const btn = document.getElementById('btn-submit');
+        if (btn) btn.disabled = true;
+
         modal.classList.remove('hidden');
         setTimeout(() => {
             modal.classList.remove('opacity-0');
@@ -29,6 +35,11 @@ function cerrarModalNueva() {
 function adaptarFormulario(tipo) {
     const fInput = document.getElementById('input-fecha');
     if (fInput) fInput.required = false;
+
+    const btn = document.getElementById('btn-submit');
+    if (btn) {
+        btn.disabled = !tipo;
+    }
 }
 
 function enviarNovedad(e) {
@@ -57,6 +68,7 @@ function enviarNovedad(e) {
     }).then(() => {
         cerrarModalNueva(); 
         e.target.reset();
+        if (btn) btn.disabled = true;
     }).finally(() => { 
         if (btn) btn.innerHTML = "PUBLICAR NOVEDAD"; 
     });

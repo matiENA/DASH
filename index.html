@@ -97,8 +97,8 @@
                 <div>
                     <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Clasificación</label>
                     <select id="input-tipo" onchange="adaptarFormulario(this.value)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none appearance-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer" required>
-                        <option value="" disabled selected>Seleccionar...</option>
-                        <option value="EN_SERVICIO">🟢 En Servicio</option>
+                        <option value="" disabled selected>Seleccionar clasificación...</option>
+                        <option value="LIBRES">🩵 Libres</option>
                         <option value="BAJA_DIAGRAMA">📅 Baja / Término de Diagrama</option>
                         <option value="CERTIFICACION_UNIDAD">🚚 Certificación de Unidad</option>
                         <option value="EXAMEN_CHOFER">🩺 Exámenes / Vencimientos</option>
@@ -116,7 +116,7 @@
                     <textarea id="input-detalle" rows="3" placeholder="Describa el requerimiento..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-medium text-slate-800 dark:text-slate-200 outline-none resize-none focus:ring-2 focus:ring-indigo-500 transition-all"></textarea>
                 </div>
 
-                <button type="submit" id="btn-submit" class="mt-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs uppercase tracking-widest p-4 rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all">
+                <button type="submit" id="btn-submit" disabled class="mt-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs uppercase tracking-widest p-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-indigo-600 disabled:hover:to-violet-600 active:scale-[0.98] disabled:active:scale-100">
                     Publicar Novedad
                 </button>
             </form>

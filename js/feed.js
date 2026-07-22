@@ -51,7 +51,7 @@ function renderizar() {
     }
 
     const categorias = {
-        'EN_SERVICIO': { titulo: '🟢 En Servicio / Operativo', colorText: 'text-emerald-600 dark:text-emerald-400', badgeBg: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300', items: [] },
+        'LIBRES': { titulo: '🩵 Libres', colorText: 'text-cyan-600 dark:text-cyan-400', badgeBg: 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300', items: [] },
         'BAJA_DIAGRAMA': { titulo: '📅 Baja / Término de Diagrama', colorText: 'text-amber-600 dark:text-amber-400', badgeBg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300', items: [] },
         'CERTIFICACION_UNIDAD': { titulo: '🚚 Certificaciones de Unidad', colorText: 'text-blue-600 dark:text-blue-400', badgeBg: 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300', items: [] },
         'EXAMEN_CHOFER': { titulo: '🩺 Exámenes / Vencimientos', colorText: 'text-rose-600 dark:text-rose-400', badgeBg: 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300', items: [] },
@@ -74,18 +74,20 @@ function renderizar() {
             let carouselId = `carrusel-cat-${index}`;
             idsCarruseles.push(carouselId);
 
-            htmlFinal += `
-            <section class="w-full mb-8">
+            htmlFinal += `<section class="w-full mb-8">`;
+            
+            if (key !== 'LIBRES') {
+                htmlFinal += `
                 <div class="w-full mb-3 shrink-0 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-2">
                     <h2 class="text-xs font-black uppercase tracking-widest ${cat.colorText} flex items-center gap-2">
                         ${cat.titulo}
                     </h2>
                     <span class="${cat.badgeBg} px-2.5 py-0.5 rounded-full text-[10px] font-black">${cat.items.length}</span>
-                </div>
-                <div id="${carouselId}" class="${carouselClass}">`;
+                </div>`;
+            }
             
+            htmlFinal += `<div id="${carouselId}" class="${carouselClass}">`;
             cat.items.forEach(n => { htmlFinal += generarHtmlCard(n); });
-            
             htmlFinal += `</div></section>`;
         }
     });
@@ -148,8 +150,26 @@ function formatearTimestamp(ts, id) {
 }
 
 function generarHtmlCard(n) {
+    let timeFormatted = formatearTimestamp(n.timestamp, n.id);
+
+    // DISEÑO ÚNICO PARA "LIBRES" CON COLOR CYAN SÓLIDO (#00FFFF) SEGÚN FIGMA
+    if (n.tipo_novedad === 'LIBRES') {
+        return `
+        <article id="card-${n.id}" class="snap-start rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-full flex items-center justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 h-[70px]">
+            <div class="flex flex-col min-w-0 pr-3 h-full justify-center">
+                <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight">${n.nom}</h3>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${n.srv}</span>
+                    <span class="text-[12px] font-extrabold text-black tracking-wide">${n.tractor}</span>
+                </div>
+            </div>
+            <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center p-2 opacity-60 hover:opacity-100 ${n.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-90'}" title="${n.resuelto ? 'Ocupado' : 'Asignar / Ocupar'}">
+                <svg class="w-6 h-6 stroke-[1]" fill="none" stroke="black" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </article>`;
+    }
+
     let cfg = { icon: '📌', bg: 'bg-indigo-50/70 dark:bg-indigo-950/40', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-100 dark:border-indigo-900/40' };
-    if (n.tipo_novedad === 'EN_SERVICIO') cfg = { icon: '🟢', bg: 'bg-emerald-50/70 dark:bg-emerald-950/40', text: 'text-emerald-900 dark:text-emerald-200', border: 'border-emerald-200/60 dark:border-emerald-900/40' };
     if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-amber-50/70 dark:bg-amber-950/40', text: 'text-amber-900 dark:text-amber-200', border: 'border-amber-200/60 dark:border-amber-900/40' };
     if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { icon: '🚚', bg: 'bg-blue-50/70 dark:bg-blue-950/40', text: 'text-blue-900 dark:text-blue-200', border: 'border-blue-200/60 dark:border-blue-900/40' };
     if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { icon: '🩺', bg: 'bg-rose-50/70 dark:bg-rose-950/40', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-200/60 dark:border-rose-900/40' };
@@ -158,8 +178,6 @@ function generarHtmlCard(n) {
     let cardClass = n.resuelto 
         ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/40 opacity-75 grayscale-[0.1]" 
         : "bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700";
-
-    let timeFormatted = formatearTimestamp(n.timestamp, n.id);
 
     return `
     <article id="card-${n.id}" class="snap-start rounded-2xl p-5 border relative overflow-hidden transition-all duration-300 w-full flex flex-col h-full ${cardClass}">
