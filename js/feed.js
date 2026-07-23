@@ -191,40 +191,40 @@ function generarHtmlCard(n) {
         </article>`;
     }
 
-    let cfg = { icon: '📌', bg: 'bg-slate-50/70 dark:bg-slate-900/40', text: 'text-slate-900 dark:text-slate-200', border: 'border-slate-200/60 dark:border-slate-800/40' };
-    if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-red-50/70 dark:bg-red-950/30', text: 'text-red-700 dark:text-red-400', border: 'border-red-200/60 dark:border-red-900/40' };
-    if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { icon: '🚚', bg: 'bg-orange-50/70 dark:bg-orange-950/30', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-200/60 dark:border-orange-900/40' };
-    if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { icon: '🩺', bg: 'bg-emerald-50/70 dark:bg-emerald-950/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200/60 dark:border-emerald-900/40' };
-    if (n.tipo_novedad === 'REPARACION') cfg = { icon: '🔧', bg: 'bg-indigo-50/70 dark:bg-indigo-950/30', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-indigo-200/60 dark:border-indigo-900/40' };
+    let cfg = { bg: 'bg-slate-50/50 dark:bg-slate-900/40', text: 'text-slate-700 dark:text-slate-300', border: 'border-slate-200/50 dark:border-slate-700/50' };
+    if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { bg: 'bg-red-50/50 dark:bg-red-950/20', text: 'text-red-600 dark:text-red-500', border: 'border-red-200/50 dark:border-red-900/30' };
+    if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { bg: 'bg-orange-50/50 dark:bg-orange-950/20', text: 'text-orange-600 dark:text-orange-500', border: 'border-orange-200/50 dark:border-orange-900/30' };
+    if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { bg: 'bg-emerald-50/50 dark:bg-emerald-950/20', text: 'text-emerald-600 dark:text-emerald-500', border: 'border-emerald-200/50 dark:border-emerald-900/30' };
+    if (n.tipo_novedad === 'REPARACION') cfg = { bg: 'bg-indigo-50/50 dark:bg-indigo-950/20', text: 'text-indigo-600 dark:text-indigo-500', border: 'border-indigo-200/50 dark:border-indigo-900/30' };
 
     let cardClass = n.resuelto 
-        ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/40 opacity-75 grayscale-[0.1] border-dashed" 
-        : "bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700";
+        ? "bg-emerald-50/20 dark:bg-emerald-950/10 border-emerald-200/50 dark:border-emerald-900/30 opacity-75 grayscale-[0.1]" 
+        : "bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800/80 shadow-none hover:border-slate-300 dark:hover:border-slate-700 transition-colors";
 
     return `
-    <article id="card-${n.id}" class="rounded-2xl p-4 relative overflow-hidden transition-all duration-300 w-full flex flex-col shrink-0 ${cardClass}">
-        <div class="flex justify-between items-start mb-3.5">
+    <article id="card-${n.id}" class="rounded-xl border p-4 relative transition-all duration-300 w-full flex flex-col shrink-0 ${cardClass}">
+        <div class="flex justify-between items-start mb-3">
             <div class="flex flex-col min-w-0 pr-3">
-                <h3 class="font-extrabold ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-base sm:text-lg leading-tight uppercase truncate w-full tracking-tight">${n.nom}</h3>
+                <h3 class="font-extrabold ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-sm sm:text-base leading-tight uppercase truncate w-full tracking-tight">${n.nom}</h3>
                 <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-md text-[9px] font-black tracking-widest uppercase border border-slate-200 dark:border-slate-700">${n.srv}</span>
-                    <span class="text-xs font-extrabold ${n.resuelto ? 'text-emerald-700 dark:text-emerald-500' : 'text-indigo-600 dark:text-indigo-400'} tracking-wide">${n.tractor}</span>
+                    <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${n.srv}</span>
+                    <span class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide">${n.tractor}</span>
                 </div>
             </div>
-            <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-8 h-8 rounded-xl border shrink-0 transition-all duration-150 shadow-sm focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500 border-emerald-500 text-white cursor-default' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-slate-400 dark:text-slate-500 cursor-pointer active:scale-90'}" title="${n.resuelto ? 'Resuelto' : 'Marcar como resuelto'}">
-                <svg class="w-4 h-4 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500/20 text-emerald-500 cursor-default' : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Resuelto' : 'Marcar como resuelto'}">
+                <svg class="w-3.5 h-3.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
             </button>
         </div>
 
-        <div class="${cfg.bg} ${cfg.border} border rounded-xl p-3.5 mt-auto flex flex-col justify-between">
+        <div class="${cfg.bg} border ${cfg.border} rounded-lg p-3 mt-auto flex flex-col justify-between">
             <div>
-                <div class="flex justify-between items-center border-b border-black/5 dark:border-white/5 pb-2 mb-2 gap-2">
-                    <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0">${cfg.icon} ${String(n.tipo_novedad).replace(/_/g, ' ')}</span>
-                    ${n.fecha_objetivo ? `<span class="bg-white/90 dark:bg-slate-950/70 px-2 py-0.5 rounded-md text-[9px] font-black ${cfg.text} shadow-2xs whitespace-nowrap border border-black/5 dark:border-white/5">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
+                <div class="flex justify-between items-center pb-2 mb-2 gap-2 border-b border-black/5 dark:border-white/5">
+                    <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0"><span class="w-2 h-2 rounded-sm ${cfg.bg.split(' ')[1]} border ${cfg.border.split(' ')[1]} block"></span> ${String(n.tipo_novedad).replace(/_/g, ' ')}</span>
+                    ${n.fecha_objetivo ? `<span class="px-1.5 py-0.5 text-[9px] font-black ${cfg.text} whitespace-nowrap">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
                 </div>
-                <p class="${cfg.text} text-xs font-semibold font-zilla leading-relaxed whitespace-pre-wrap break-words mb-2">${n.detalle}</p>
+                <p class="${cfg.text} text-xs font-semibold font-zilla leading-relaxed whitespace-pre-wrap break-words mb-3">${n.detalle}</p>
             </div>
-            <div class="flex justify-between items-center pt-1.5 border-t border-black/5 dark:border-white/5 mt-1 text-[9px] font-bold text-slate-400 dark:text-slate-500">
+            <div class="flex justify-between items-center text-[9px] font-bold text-slate-400 dark:text-slate-500">
                 <span class="truncate pr-2 uppercase flex items-center gap-1" title="Creador">
                     👤 ${n.creador || n.usuario || 'Anónimo'}
                 </span>
