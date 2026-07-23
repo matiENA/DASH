@@ -89,7 +89,7 @@ function renderizar() {
     htmlFinal += `</div></div></section>`;
 
     // RENDERIZAR COLUMNAS KANBAN
-    htmlFinal += `<div class="flex gap-6 w-full h-full overflow-x-auto custom-scrollbar pb-2">`;
+    htmlFinal += `<div class="flex gap-6 w-full h-full overflow-x-auto custom-scrollbar pb-2 justify-start xl:justify-center">`;
     
     Object.keys(categorias).forEach((key, index) => {
         if (key === 'LIBRES') return;
@@ -177,7 +177,7 @@ function generarHtmlCard(n) {
     // DISEÑO ÚNICO PARA "LIBRES" CON COLOR CYAN SÓLIDO (#00FFFF) SEGÚN FIGMA
     if (n.tipo_novedad === 'LIBRES') {
         return `
-        <article id="card-${n.id}" class="snap-start rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-full flex items-center justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 h-[70px]">
+        <article id="card-${n.id}" class="snap-start rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-[300px] shrink-0 flex items-center justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 h-[70px]">
             <div class="flex flex-col min-w-0 pr-3 h-full justify-center">
                 <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight">${n.nom}</h3>
                 <div class="flex items-center gap-2 mt-1">
