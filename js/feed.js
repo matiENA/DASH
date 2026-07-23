@@ -66,7 +66,7 @@ function renderizar() {
     let idsCarruseles = [];
 
     const columnClass = "flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 pb-4 h-full flex-1";
-    const carouselClass = "flex gap-5 overflow-x-auto pb-4 pt-2 custom-scrollbar items-center w-full snap-x";
+    const carouselClass = "flex gap-5 overflow-x-auto pb-4 pt-2 custom-scrollbar items-center w-full";
 
     // RENDERIZAR LIBRES PRIMERO (HORIZONTAL TOP)
     let carouselIdLibres = `carrusel-cat-libres`;
@@ -191,12 +191,13 @@ function generarHtmlCard(n) {
     // DISEÑO ÚNICO PARA "LIBRES" CON COLOR CYAN SÓLIDO (#00FFFF) SEGÚN FIGMA
     if (n.tipo_novedad === 'LIBRES') {
         return `
-        <article id="card-${n.id}" class="snap-start rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-[300px] shrink-0 flex items-center justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 h-[70px]">
+        <article id="card-${n.id}" class="rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-[300px] shrink-0 flex items-center justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 h-[70px]">
             <div class="flex flex-col min-w-0 pr-3 h-full justify-center">
                 <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight">${n.nom}</h3>
                 <div class="flex items-center gap-2 mt-1">
                     <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${n.srv}</span>
                     <span class="text-[12px] font-extrabold text-black tracking-wide">${n.tractor}</span>
+                    ${timeFormatted ? `<span class="text-[11px] font-bold text-black/40 tracking-wide">${timeFormatted}</span>` : ''}
                 </div>
             </div>
             <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center p-2 opacity-60 hover:opacity-100 ${n.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-90'}" title="${n.resuelto ? 'Ocupado' : 'Asignar / Ocupar'}">
