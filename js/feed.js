@@ -50,11 +50,11 @@ function renderizar() {
     }
 
     const categorias = {
-        'LIBRES': { titulo: '🩵 Libres', colorText: 'text-cyan-600 dark:text-cyan-400', badgeBg: 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300', items: [] },
-        'BAJA_DIAGRAMA': { titulo: '📅 Baja / Término de Diagrama', colorText: 'text-amber-600 dark:text-amber-400', badgeBg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300', items: [] },
-        'CERTIFICACION_UNIDAD': { titulo: '🚚 Certificaciones de Unidad', colorText: 'text-blue-600 dark:text-blue-400', badgeBg: 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300', items: [] },
-        'EXAMEN_CHOFER': { titulo: '🩺 Exámenes / Vencimientos', colorText: 'text-rose-600 dark:text-rose-400', badgeBg: 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300', items: [] },
-        'REPARACION': { titulo: '🔧 Reparaciones Requeridas', colorText: 'text-slate-700 dark:text-slate-300', badgeBg: 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300', items: [] }
+        'LIBRES': { titulo: 'LIBRES', colorText: 'text-cyan-600 dark:text-cyan-400', borderColor: 'border-cyan-400', items: [] },
+        'BAJA_DIAGRAMA': { titulo: 'BAJA / TÉRMINO DE DIAGRAMA', colorText: 'text-red-500', borderColor: 'border-red-500', items: [] },
+        'REPARACION': { titulo: 'REPARACIONES REQUERIDAS', colorText: 'text-indigo-500', borderColor: 'border-indigo-500', items: [] },
+        'CERTIFICACION_UNIDAD': { titulo: 'CERTIFICACIONES DE UNIDAD', colorText: 'text-orange-400', borderColor: 'border-orange-300', items: [] },
+        'EXAMEN_CHOFER': { titulo: 'EXÁMENES / VENCIMIENTOS', colorText: 'text-emerald-500', borderColor: 'border-emerald-500', items: [] }
     };
 
     activas.forEach(n => {
@@ -65,54 +65,54 @@ function renderizar() {
     let htmlFinal = '';
     let idsCarruseles = [];
 
-    const carouselClass = "grid grid-flow-col auto-cols-[88%] sm:auto-cols-[55%] md:auto-cols-[42%] lg:auto-cols-[31%] gap-5 overflow-x-auto pb-4 pt-2 custom-scrollbar items-stretch w-full";
+    const columnClass = "flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 pb-4 h-full flex-1";
+    const carouselClass = "flex gap-5 overflow-x-auto pb-4 pt-2 custom-scrollbar items-center w-full snap-x";
 
+    // RENDERIZAR LIBRES PRIMERO (HORIZONTAL TOP)
+    let carouselIdLibres = `carrusel-cat-libres`;
+    idsCarruseles.push(carouselIdLibres);
+    htmlFinal += `
+    <section class="w-full mb-8">
+        <div class="flex items-center gap-4 w-full">
+            <div class="relative shrink-0 flex items-center justify-center h-[70px]">
+                <button id="btn-quick-libre" onclick="toggleQuickAddLibre()" class="w-[70px] h-full rounded-xl border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all flex items-center justify-center group focus:outline-none shadow-sm cursor-pointer z-10 bg-white dark:bg-slate-900" title="Agregar Libre Rápido">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </button>
+                <div id="quick-add-libre-dropdown" class="hidden absolute top-[80px] left-0 w-72 md:w-80 bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-800 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col">
+                    <input type="text" id="quick-input-nom" placeholder="BUSCAR PARA LIBERAR..." class="w-full bg-transparent p-3 text-sm font-black text-slate-800 dark:text-slate-200 outline-none uppercase border-b border-slate-100 dark:border-slate-800 placeholder-slate-400" autocomplete="off" oninput="filtrarQuickChoferes()" onfocus="filtrarQuickChoferes()">
+                    <div id="quick-dropdown-choferes" class="max-h-64 overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+            <div id="${carouselIdLibres}" class="${carouselClass}">`;
+            
+    categorias['LIBRES'].items.forEach(n => { htmlFinal += generarHtmlCard(n); });
+    htmlFinal += `</div></div></section>`;
+
+    // RENDERIZAR COLUMNAS KANBAN
+    htmlFinal += `<div class="flex gap-6 w-full h-full overflow-x-auto custom-scrollbar pb-2">`;
+    
     Object.keys(categorias).forEach((key, index) => {
+        if (key === 'LIBRES') return;
+        
         const cat = categorias[key];
-        if (cat.items.length > 0 || key === 'LIBRES') {
-            let carouselId = `carrusel-cat-${index}`;
-            idsCarruseles.push(carouselId);
+        let carouselId = `carrusel-cat-${index}`;
+        idsCarruseles.push(carouselId);
 
-            htmlFinal += `<section class="w-full mb-8">`;
-            
-            if (key !== 'LIBRES') {
-                htmlFinal += `
-                <div class="w-full mb-3 shrink-0 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-2">
-                    <h2 class="text-xs font-black uppercase tracking-widest ${cat.colorText} flex items-center gap-2">
-                        ${cat.titulo}
-                    </h2>
-                    <span class="${cat.badgeBg} px-2.5 py-0.5 rounded-full text-[10px] font-black">${cat.items.length}</span>
-                </div>`;
-            }
-            
-            
-            if (key === 'LIBRES') {
-                // Layout especial para LIBRES: flex container para fijar el botón a la izquierda
-                htmlFinal += `
-                <div class="flex items-center gap-4 w-full">
-                    <div class="relative shrink-0 flex items-center justify-center h-[70px]">
-                        <button id="btn-quick-libre" onclick="toggleQuickAddLibre()" class="w-[70px] h-full rounded-xl border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all flex items-center justify-center group focus:outline-none shadow-sm cursor-pointer z-10 bg-slate-900/50" title="Agregar Libre Rápido">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        </button>
-                        <div id="quick-add-libre-dropdown" class="hidden absolute top-[80px] left-0 w-72 md:w-80 bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-800 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col">
-                            <input type="text" id="quick-input-nom" placeholder="BUSCAR PARA LIBERAR..." class="w-full bg-transparent p-3 text-sm font-black text-slate-800 dark:text-slate-200 outline-none uppercase border-b border-slate-100 dark:border-slate-800 placeholder-slate-400" autocomplete="off" oninput="filtrarQuickChoferes()" onfocus="filtrarQuickChoferes()">
-                            <div id="quick-dropdown-choferes" class="max-h-64 overflow-y-auto custom-scrollbar"></div>
-                        </div>
-                    </div>
-                    <div id="${carouselId}" class="flex-1 ${carouselClass}">`;
-            } else {
-                htmlFinal += `<div id="${carouselId}" class="${carouselClass}">`;
-            }
+        htmlFinal += `
+        <section class="w-80 shrink-0 border-2 border-dashed ${cat.borderColor} rounded-2xl p-4 bg-transparent snap-start flex flex-col h-full max-h-full overflow-hidden">
+            <div class="w-full mb-4 shrink-0 flex items-center justify-center pb-2">
+                <h2 class="text-[11px] font-black uppercase tracking-widest ${cat.colorText} text-center">
+                    ${cat.titulo}
+                </h2>
+            </div>
+            <div id="${carouselId}" class="${columnClass}">`;
 
-            cat.items.forEach(n => { htmlFinal += generarHtmlCard(n); });
-            
-            if (key === 'LIBRES') {
-                htmlFinal += `</div></div></section>`;
-            } else {
-                htmlFinal += `</div></section>`;
-            }
-        }
+        cat.items.forEach(n => { htmlFinal += generarHtmlCard(n); });
+        
+        htmlFinal += `</div></section>`;
     });
+
+    htmlFinal += `</div>`;
 
     container.innerHTML = htmlFinal;
 
@@ -138,13 +138,13 @@ function inicializarAutoScroll(containerId) {
     const interval = setInterval(() => {
         if (isPaused) return;
 
-        if (track.scrollWidth > track.clientWidth) {
-            track.scrollLeft += scrollSpeed;
-
-            if (Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 2) {
+        if (track.scrollHeight > track.clientHeight) {
+            track.scrollTop += scrollSpeed;
+            
+            if (Math.ceil(track.scrollTop + track.clientHeight) >= track.scrollHeight - 2) {
                 isPaused = true;
                 setTimeout(() => {
-                    track.scrollTo({ left: 0, behavior: 'smooth' });
+                    track.scrollTo({ top: 0, behavior: 'smooth' });
                     setTimeout(() => isPaused = false, 1000);
                 }, 1200);
             }
@@ -191,18 +191,18 @@ function generarHtmlCard(n) {
         </article>`;
     }
 
-    let cfg = { icon: '📌', bg: 'bg-indigo-50/70 dark:bg-indigo-950/40', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-100 dark:border-indigo-900/40' };
-    if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-amber-50/70 dark:bg-amber-950/40', text: 'text-amber-900 dark:text-amber-200', border: 'border-amber-200/60 dark:border-amber-900/40' };
-    if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { icon: '🚚', bg: 'bg-blue-50/70 dark:bg-blue-950/40', text: 'text-blue-900 dark:text-blue-200', border: 'border-blue-200/60 dark:border-blue-900/40' };
-    if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { icon: '🩺', bg: 'bg-rose-50/70 dark:bg-rose-950/40', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-200/60 dark:border-rose-900/40' };
-    if (n.tipo_novedad === 'REPARACION') cfg = { icon: '🔧', bg: 'bg-slate-100/80 dark:bg-slate-800/60', text: 'text-slate-800 dark:text-slate-200', border: 'border-slate-200 dark:border-slate-700/60' };
+    let cfg = { icon: '📌', bg: 'bg-slate-50/70 dark:bg-slate-900/40', text: 'text-slate-900 dark:text-slate-200', border: 'border-slate-200/60 dark:border-slate-800/40' };
+    if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { icon: '📅', bg: 'bg-red-50/70 dark:bg-red-950/30', text: 'text-red-700 dark:text-red-400', border: 'border-red-200/60 dark:border-red-900/40' };
+    if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { icon: '🚚', bg: 'bg-orange-50/70 dark:bg-orange-950/30', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-200/60 dark:border-orange-900/40' };
+    if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { icon: '🩺', bg: 'bg-emerald-50/70 dark:bg-emerald-950/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200/60 dark:border-emerald-900/40' };
+    if (n.tipo_novedad === 'REPARACION') cfg = { icon: '🔧', bg: 'bg-indigo-50/70 dark:bg-indigo-950/30', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-indigo-200/60 dark:border-indigo-900/40' };
 
     let cardClass = n.resuelto 
-        ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/40 opacity-75 grayscale-[0.1]" 
-        : "bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700";
+        ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/40 opacity-75 grayscale-[0.1] border-dashed" 
+        : "bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700";
 
     return `
-    <article id="card-${n.id}" class="snap-start rounded-2xl p-5 border relative overflow-hidden transition-all duration-300 w-full flex flex-col h-full ${cardClass}">
+    <article id="card-${n.id}" class="rounded-2xl p-4 relative overflow-hidden transition-all duration-300 w-full flex flex-col shrink-0 ${cardClass}">
         <div class="flex justify-between items-start mb-3.5">
             <div class="flex flex-col min-w-0 pr-3">
                 <h3 class="font-extrabold ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-base sm:text-lg leading-tight uppercase truncate w-full tracking-tight">${n.nom}</h3>
@@ -222,7 +222,7 @@ function generarHtmlCard(n) {
                     <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0">${cfg.icon} ${String(n.tipo_novedad).replace(/_/g, ' ')}</span>
                     ${n.fecha_objetivo ? `<span class="bg-white/90 dark:bg-slate-950/70 px-2 py-0.5 rounded-md text-[9px] font-black ${cfg.text} shadow-2xs whitespace-nowrap border border-black/5 dark:border-white/5">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
                 </div>
-                <p class="${cfg.text} text-xs font-semibold leading-relaxed whitespace-pre-wrap break-words mb-2">${n.detalle}</p>
+                <p class="${cfg.text} text-xs font-semibold font-zilla leading-relaxed whitespace-pre-wrap break-words mb-2">${n.detalle}</p>
             </div>
             <div class="flex justify-between items-center pt-1.5 border-t border-black/5 dark:border-white/5 mt-1 text-[9px] font-bold text-slate-400 dark:text-slate-500">
                 <span class="truncate pr-2 uppercase flex items-center gap-1" title="Creador">

@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Novedades Live | EOR</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;900&family=Zilla+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'] } } } }
+        tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'], zilla: ['Zilla Slab', 'serif'] } } } }
     </script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -48,8 +48,10 @@
     </header>
 
     <!-- MAIN CONTAINER SIN SCROLLBAR VISIBLE -->
-    <main id="feed-container" class="flex-1 overflow-y-auto custom-scrollbar p-5 pb-32 max-w-7xl mx-auto w-full">
-        <div class="flex justify-center items-center h-40"><span class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></span></div>
+    <main id="feed-container" class="flex-1 overflow-hidden p-6 pb-20 flex flex-col max-w-[100vw]">
+        <div class="h-full w-full flex flex-col gap-6 overflow-hidden" id="novedades-container">
+            <div class="flex justify-center items-center h-40 w-full"><span class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></span></div>
+        </div>
     </main>
 
     <!-- BOTÓN ACCIÓN FLOTANTE (FAB) -->
@@ -133,7 +135,7 @@
 
                 <div>
                     <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Detalle / Notas</label>
-                    <textarea id="input-detalle" rows="3" placeholder="Describa el requerimiento..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-medium text-slate-800 dark:text-slate-200 outline-none resize-none focus:ring-2 focus:ring-indigo-500 transition-all"></textarea>
+                    <textarea id="input-detalle" rows="3" placeholder="Describa el requerimiento..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-medium font-zilla text-slate-800 dark:text-slate-200 outline-none resize-none focus:ring-2 focus:ring-indigo-500 transition-all"></textarea>
                 </div>
 
                 <button type="submit" id="btn-submit" disabled class="mt-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs uppercase tracking-widest p-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-indigo-600 disabled:hover:to-violet-600 active:scale-[0.98] disabled:active:scale-100">
