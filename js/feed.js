@@ -27,8 +27,8 @@ function renderizar() {
     autoScrollIntervals.forEach(clearInterval);
     autoScrollIntervals = [];
 
-    const activas = RAM_Novedades.filter(n => !n.resuelto);
-    const resueltasTodas = RAM_Novedades.filter(n => n.resuelto);
+    const activas = RAM_Novedades.filter(n => !n.resuelto).sort((a, b) => b.id - a.id);
+    const resueltasTodas = RAM_Novedades.filter(n => n.resuelto).sort((a, b) => b.id - a.id);
 
     if (vistaActual === 'resueltos') {
         if (resueltasTodas.length === 0) {
