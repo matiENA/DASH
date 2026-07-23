@@ -89,7 +89,7 @@ function renderizar() {
     htmlFinal += `</div></div></section>`;
 
     // RENDERIZAR COLUMNAS KANBAN
-    htmlFinal += `<div class="flex gap-6 w-full h-full overflow-x-auto custom-scrollbar pb-2">`;
+    htmlFinal += `<div class="flex gap-6 w-full h-full overflow-x-auto custom-scrollbar pb-2 justify-start xl:justify-center">`;
     
     Object.keys(categorias).forEach((key, index) => {
         if (key === 'LIBRES') return;
@@ -138,15 +138,29 @@ function inicializarAutoScroll(containerId) {
     const interval = setInterval(() => {
         if (isPaused) return;
 
-        if (track.scrollHeight > track.clientHeight) {
-            track.scrollTop += scrollSpeed;
-            
-            if (Math.ceil(track.scrollTop + track.clientHeight) >= track.scrollHeight - 2) {
-                isPaused = true;
-                setTimeout(() => {
-                    track.scrollTo({ top: 0, behavior: 'smooth' });
-                    setTimeout(() => isPaused = false, 1000);
-                }, 1200);
+        let isHorizontal = track.classList.contains('overflow-x-auto');
+
+        if (isHorizontal) {
+            if (track.scrollWidth > track.clientWidth) {
+                track.scrollLeft += scrollSpeed;
+                if (Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 2) {
+                    isPaused = true;
+                    setTimeout(() => {
+                        track.scrollTo({ left: 0, behavior: 'smooth' });
+                        setTimeout(() => isPaused = false, 1000);
+                    }, 1200);
+                }
+            }
+        } else {
+            if (track.scrollHeight > track.clientHeight) {
+                track.scrollTop += scrollSpeed;
+                if (Math.ceil(track.scrollTop + track.clientHeight) >= track.scrollHeight - 2) {
+                    isPaused = true;
+                    setTimeout(() => {
+                        track.scrollTo({ top: 0, behavior: 'smooth' });
+                        setTimeout(() => isPaused = false, 1000);
+                    }, 1200);
+                }
             }
         }
     }, 25);
@@ -177,7 +191,7 @@ function generarHtmlCard(n) {
     // DISEÑO ÚNICO PARA "LIBRES" CON COLOR CYAN SÓLIDO (#00FFFF) SEGÚN FIGMA
     if (n.tipo_novedad === 'LIBRES') {
         return `
-        <article id="card-${n.id}" class="snap-start rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-full flex items-center justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 h-[70px]">
+        <article id="card-${n.id}" class="snap-start rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-[300px] shrink-0 flex items-center justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 h-[70px]">
             <div class="flex flex-col min-w-0 pr-3 h-full justify-center">
                 <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight">${n.nom}</h3>
                 <div class="flex items-center gap-2 mt-1">
@@ -209,29 +223,31 @@ function generarHtmlCard(n) {
                 <div class="flex items-center gap-2 mt-1.5 flex-wrap">
                     <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${n.srv}</span>
                     <span class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide">${n.tractor}</span>
+                    ${n.fecha_objetivo ? `<span class="px-1.5 py-0.5 text-[9px] font-black ${cfg.text} whitespace-nowrap rounded border ${cfg.border}">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
                 </div>
             </div>
-            <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500/20 text-emerald-500 cursor-default' : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Resuelto' : 'Marcar como resuelto'}">
-                <svg class="w-3.5 h-3.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-            </button>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500/20 text-emerald-500 cursor-default' : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Resuelto' : 'Marcar como resuelto'}">
+                    <svg class="w-3.5 h-3.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                </button>
+                <button class="w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:text-indigo-500 dark:hover:text-indigo-400 text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+            </div>
         </div>
 
-        <div class="${cfg.bg} border ${cfg.border} rounded-lg p-3 mt-auto flex flex-col justify-between">
-            <div>
-                <div class="flex justify-between items-center pb-2 mb-2 gap-2 border-b border-black/5 dark:border-white/5">
-                    <span class="${cfg.text} text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shrink-0"><span class="w-2 h-2 rounded-sm ${cfg.bg.split(' ')[1]} border ${cfg.border.split(' ')[1]} block"></span> ${String(n.tipo_novedad).replace(/_/g, ' ')}</span>
-                    ${n.fecha_objetivo ? `<span class="px-1.5 py-0.5 text-[9px] font-black ${cfg.text} whitespace-nowrap">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
-                </div>
-                <p class="${cfg.text} text-xs font-semibold font-zilla leading-relaxed whitespace-pre-wrap break-words mb-3">${n.detalle}</p>
-            </div>
-            <div class="flex justify-between items-center text-[9px] font-bold text-slate-400 dark:text-slate-500">
-                <span class="truncate pr-2 uppercase flex items-center gap-1" title="Creador">
-                    👤 ${n.creador || n.usuario || 'Anónimo'}
-                </span>
-                ${timeFormatted ? `<span class="shrink-0 flex items-center gap-1 tracking-wider">
-                    🕒 ${timeFormatted}
-                </span>` : ''}
-            </div>
+        ${n.detalle && n.detalle.trim() ? `
+        <div class="${cfg.bg} border ${cfg.border} rounded-lg p-3 mb-3">
+            <p class="${cfg.text} text-xs font-semibold font-zilla leading-relaxed whitespace-pre-wrap break-words">${n.detalle}</p>
+        </div>` : ''}
+
+        <div class="flex justify-between items-center text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-auto">
+            <span class="truncate pr-2 uppercase flex items-center gap-1" title="Creador">
+                👤 ${n.creador || n.usuario || 'Anónimo'}
+            </span>
+            ${timeFormatted ? `<span class="shrink-0 flex items-center gap-1 tracking-wider">
+                🕒 ${timeFormatted}
+            </span>` : ''}
         </div>
     </article>`;
 }

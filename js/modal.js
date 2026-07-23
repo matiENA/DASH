@@ -163,3 +163,5 @@ document.addEventListener('click', (e) => {
     if (dropTractor && !dropTractor.contains(e.target) && e.target.id !== 'input-tractor') dropTractor.classList.add('hidden');
     if (dropLogin && authContainer && !authContainer.contains(e.target)) dropLogin.classList.add('hidden');
 });
+
+function abrirEdicion(id) { console.log('Editando novedad:', id); alert('Función de edición en desarrollo para la novedad ' + id); }
