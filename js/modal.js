@@ -81,10 +81,14 @@ function enviarNovedad(e) {
         creador: creadorNom
     };
 
+    const editIdInput = document.getElementById('input-edit-id');
+    const editId = editIdInput ? editIdInput.value : '';
+    const bodyData = editId ? { action: 'editar', id_novedad: editId, payload } : { action: 'nueva', payload };
+
     fetch(`${API_URL}/api/novedades/actualizar`, {
-        method: 'POST', 
+        method: 'POST',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: 'nueva', payload })
+        body: JSON.stringify(bodyData)
     }).then(() => {
         cerrarModalNueva(); 
         e.target.reset();

@@ -202,7 +202,6 @@ function generarHtmlCard(n) {
                         <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${n.srv || 'S/A'}</span>
                         ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
                         <span class="text-[12px] font-extrabold text-black tracking-wide">${n.tractor || ''}</span>
-                        ${timeFormatted ? `<span class="text-[11px] font-bold text-black/50 tracking-wide">${timeFormatted}</span>` : ''}
                     </div>
                 </div>
                 <div class="flex items-center gap-1 shrink-0">
@@ -218,9 +217,12 @@ function generarHtmlCard(n) {
             <div class="mt-2 bg-black/10 rounded-lg p-2.5 overflow-y-auto custom-scrollbar max-h-24">
                 <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-wrap break-words">${n.detalle}</p>
             </div>` : ''}
-            <div class="flex items-center gap-1 text-[10px] font-black text-black uppercase mt-2">
-                <span class="text-purple-700">👤</span>
-                <span>${n.creador || n.usuario || 'USER'}</span>
+            <div class="flex items-center justify-between text-[10px] font-black text-black uppercase mt-1">
+                <span class="flex items-center gap-1">
+                    <span class="text-purple-700">👤</span>
+                    <span>${n.creador || n.usuario || 'USER'}</span>
+                </span>
+                ${timeFormatted ? `<span class="text-black/60 font-bold tracking-wide">${timeFormatted}</span>` : ''}
             </div>
         </article>`;
     }
