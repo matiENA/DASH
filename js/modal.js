@@ -165,6 +165,7 @@ document.addEventListener('click', (e) => {
 });
 
 function abrirEdicion(id) {
+    const sesion = (typeof obtenerUsuarioSesion === 'function') ? obtenerUsuarioSesion() : null;
     if (!sesion || !sesion.usuario) {
         alert('Debe iniciar sesion para editar novedades.');
         if (typeof abrirModalAuth === 'function') abrirModalAuth();
