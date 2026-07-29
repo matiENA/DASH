@@ -1,4 +1,4 @@
-function abrirModalNueva() {
+ï»¿function abrirModalNueva() {
     const sesion = obtenerUsuarioSesion();
     if (!sesion || !sesion.usuario) {
         toggleDropdownLogin(true);
@@ -164,4 +164,54 @@ document.addEventListener('click', (e) => {
     if (dropLogin && authContainer && !authContainer.contains(e.target)) dropLogin.classList.add('hidden');
 });
 
-function abrirEdicion(id) { console.log('Editando novedad:', id); alert('Función de edición en desarrollo para la novedad ' + id); }
+function abrirEdicion(id) {
+    if (!sesion || !sesion.usuario) {
+        alert('Debe iniciar sesion para editar novedades.');
+        if (typeof abrirModalAuth === 'function') abrirModalAuth();
+        return;
+    }
+    const n = (RAM_Novedades || []).find(item => String(item.id) === String(id));
+    if (!n) {
+        alert('Novedad no encontrada.');
+        return;
+    }
+
+    const modal = document.getElementById('modal-nueva');
+    if (!modal) return;
+
+    const editIdInput = document.getElementById('input-edit-id');
+    if (editIdInput) editIdInput.value = n.id;
+
+    const tituloModal = document.getElementById('modal-titulo');
+    if (tituloModal) tituloModal.innerText = 'Editar Novedad / Detalle';
+
+    document.getElementById('input-nom').value = n.nom || '';
+    document.getElementById('input-tractor').value = n.tractor || '';
+    document.getElementById('input-srv').value = n.srv || 'S/A';
+    document.getElementById('input-ute').value = n.n_ute || '';
+    
+    const selectTipo = document.getElementById('input-tipo');
+    if (selectTipo) {
+        selectTipo.value = n.tipo_novedad || 'LIBRES';
+        adaptarFormulario(n.tipo_novedad);
+    }
+    
+    const inputFecha = document.getElementById('input-fecha');
+    if (inputFecha) inputFecha.value = n.fecha_objetivo || '';
+
+    const inputDetalle = document.getElementById('input-detalle');
+    if (inputDetalle) inputDetalle.value = n.detalle || '';
+
+    const btn = document.getElementById('btn-submit');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerText = 'GUARDAR CAMBIOS';
+    }
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        const content = document.getElementById('modal-content');
+        if (content) content.classList.remove('translate-y-full');
+    }, 10);
+}

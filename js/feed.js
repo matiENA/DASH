@@ -187,22 +187,41 @@ function formatearTimestamp(ts, id) {
 
 function generarHtmlCard(n) {
     let timeFormatted = formatearTimestamp(n.timestamp, n.id);
+    let uteBadge = (n.n_ute && n.n_ute !== 'S/D') ? n.n_ute : '';
 
     // DISEÑO ÚNICO PARA "LIBRES" CON COLOR CYAN SÓLIDO (#00FFFF) SEGÚN FIGMA
     if (n.tipo_novedad === 'LIBRES') {
+        let tieneDetalle = n.detalle && n.detalle.trim().length > 0;
+        let cardHeight = tieneDetalle ? 'min-h-[90px] py-3' : 'min-h-[85px] py-2.5';
         return `
-        <article id="card-${n.id}" class="rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-[300px] shrink-0 flex items-center justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 h-[70px]">
-            <div class="flex flex-col min-w-0 pr-3 h-full justify-center">
-                <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight">${n.nom}</h3>
-                <div class="flex items-center gap-2 mt-1">
-                    <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${n.srv}</span>
-                    <span class="text-[12px] font-extrabold text-black tracking-wide">${n.tractor}</span>
-                    ${timeFormatted ? `<span class="text-[11px] font-bold text-black/40 tracking-wide">${timeFormatted}</span>` : ''}
+        <article id="card-${n.id}" class="rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 ${cardHeight}">
+            <div class="flex items-start justify-between w-full">
+                <div class="flex flex-col min-w-0 pr-2 justify-center">
+                    <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight">${n.nom}</h3>
+                    <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${n.srv || 'S/A'}</span>
+                        ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
+                        <span class="text-[12px] font-extrabold text-black tracking-wide">${n.tractor || ''}</span>
+                        ${timeFormatted ? `<span class="text-[11px] font-bold text-black/50 tracking-wide">${timeFormatted}</span>` : ''}
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                    <button class="w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
+                    <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 ${n.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Ocupado' : 'Asignar / Ocupar'}">
+                        <svg class="w-5 h-5 stroke-[1.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>
             </div>
-            <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center p-2 opacity-60 hover:opacity-100 ${n.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-90'}" title="${n.resuelto ? 'Ocupado' : 'Asignar / Ocupar'}">
-                <svg class="w-6 h-6 stroke-[1]" fill="none" stroke="black" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+            ${tieneDetalle ? `
+            <div class="mt-2 bg-black/10 rounded-lg p-2.5 overflow-y-auto custom-scrollbar max-h-24">
+                <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-wrap break-words">${n.detalle}</p>
+            </div>` : ''}
+            <div class="flex items-center gap-1 text-[10px] font-black text-black uppercase mt-2">
+                <span class="text-purple-700">👤</span>
+                <span>${n.creador || n.usuario || 'USER'}</span>
+            </div>
         </article>`;
     }
 
@@ -221,8 +240,9 @@ function generarHtmlCard(n) {
         <div class="flex justify-between items-start mb-3">
             <div class="flex flex-col min-w-0 pr-3">
                 <h3 class="font-extrabold ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-sm sm:text-base leading-tight uppercase truncate w-full tracking-tight">${n.nom}</h3>
-                <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${n.srv}</span>
+                <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${n.srv || 'S/A'}</span>
+                    ${uteBadge ? `<span class="border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase">${uteBadge}</span>` : ''}
                     <span class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide">${n.tractor}</span>
                     ${n.fecha_objetivo ? `<span class="px-1.5 py-0.5 text-[9px] font-black ${cfg.text} whitespace-nowrap rounded border ${cfg.border}">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
                 </div>

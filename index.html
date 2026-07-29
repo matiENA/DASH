@@ -65,12 +65,13 @@
             <div class="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="text-xl">📋</span>
-                    <h2 class="text-lg font-black text-slate-900 dark:text-white">Reportar Novedad</h2>
+                    <h2 id="modal-titulo" class="text-lg font-black text-slate-900 dark:text-white">Reportar Novedad</h2>
                 </div>
                 <button onclick="cerrarModalNueva()" class="p-2 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
             
             <form onsubmit="enviarNovedad(event)" class="p-5 flex-1 overflow-y-auto flex flex-col gap-4 custom-scrollbar">
+                <input type="hidden" id="input-edit-id">
                 
                 <div class="relative">
                     <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Buscar Conductor</label>
