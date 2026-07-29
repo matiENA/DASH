@@ -89,7 +89,7 @@ function renderizar() {
     htmlFinal += `</div></div></section>`;
 
     // RENDERIZAR COLUMNAS KANBAN
-    htmlFinal += `<div class="flex gap-6 w-full h-full overflow-x-auto custom-scrollbar pb-2 justify-start xl:justify-center">`;
+    htmlFinal += `<div class="flex gap-4 lg:gap-6 w-full h-full overflow-x-auto custom-scrollbar pb-2 items-stretch">`;
     
     Object.keys(categorias).forEach((key, index) => {
         if (key === 'LIBRES') return;
@@ -99,7 +99,7 @@ function renderizar() {
         idsCarruseles.push(carouselId);
 
         htmlFinal += `
-        <section class="w-80 shrink-0 border-2 border-dashed ${cat.borderColor} rounded-2xl p-4 bg-transparent snap-start flex flex-col h-full max-h-full overflow-hidden">
+        <section class="flex-1 min-w-[270px] border-2 border-dashed ${cat.borderColor} rounded-2xl p-4 bg-transparent flex flex-col h-full max-h-full overflow-hidden transition-all duration-300">
             <div class="w-full mb-4 shrink-0 flex items-center justify-center pb-2">
                 <h2 class="text-[11px] font-black uppercase tracking-widest ${cat.colorText} text-center">
                     ${cat.titulo}
