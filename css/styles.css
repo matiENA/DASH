@@ -23,11 +23,27 @@ body { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
     box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.25);
 }
 
-/* 📅 ICONO DE CALENDARIO VISIBLE EN MODO OSCURO */
+/* 📅 ICONO DE CALENDARIO VISIBLE EN MODO CLARO Y OSCURO */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
 .dark input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1) brightness(1.2);
-    cursor: pointer;
+    opacity: 0.9;
 }
-input[type="date"] {
-    color-scheme: light dark;
+
+/* 🔒 VISTA SÓLIDA (SOLO LECTURA - SIN ELEMENTOS EDITABLES) */
+.vista-solida .btn-card-edit,
+.vista-solida .btn-card-resolve,
+.vista-solida .btn-mention-remove,
+.vista-solida #btn-quick-libre,
+.vista-solida #btn-fab-nueva,
+.vista-solida .mention-input-wrapper {
+    display: none !important;
 }

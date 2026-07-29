@@ -38,6 +38,12 @@
 
             <!-- DERECHA: ACCIONES & USUARIO -->
             <div class="flex items-center gap-2.5 shrink-0">
+                <!-- SWITCH VISTA SÓLIDA -->
+                <button onclick="toggleVistaSolida()" id="btn-vista-solida" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all border border-slate-200/60 dark:border-slate-700/60 active:scale-95 shadow-sm text-xs font-extrabold flex items-center gap-1.5 cursor-pointer" title="Alternar Vista Sólida (Solo Lectura)">
+                    <span id="dot-vista-solida" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                    <span class="hidden sm:inline">Vista Sólida</span>
+                </button>
+
                 <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700/80 transition-all focus:outline-none border border-slate-200/60 dark:border-slate-700/60 active:scale-95 shadow-sm" title="Alternar Modo Oscuro">
                     <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                     <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
@@ -56,7 +62,7 @@
     </main>
 
     <!-- BOTÓN ACCIÓN FLOTANTE (FAB) -->
-    <button onclick="abrirModalNueva()" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-tr from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-2xl shadow-lg shadow-indigo-600/30 flex justify-center items-center active:scale-90 transition-all duration-200 z-50 border border-indigo-400/30 group">
+    <button id="btn-fab-nueva" onclick="abrirModalNueva()" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-tr from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-2xl shadow-lg shadow-indigo-600/30 flex justify-center items-center active:scale-90 transition-all duration-200 z-50 border border-indigo-400/30 group">
         <svg class="w-6 h-6 transform group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
     </button>
 
@@ -150,13 +156,39 @@
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        // 👉 INICIALIZACIÓN MODO OSCURO
+        // 👉 INICIALIZACIÓN MODO OSCURO & VISTA SÓLIDA
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
-            document.getElementById('icon-moon').classList.add('hidden');
-            document.getElementById('icon-sun').classList.remove('hidden');
+            document.getElementById('icon-moon')?.classList.add('hidden');
+            document.getElementById('icon-sun')?.classList.remove('hidden');
         } else {
             document.documentElement.classList.remove('dark');
+        }
+
+        if (localStorage.getItem('vista_solida') === 'true') {
+            document.documentElement.classList.add('vista-solida');
+        }
+
+        function updateVistaSolidaUI(isSolida) {
+            const dot = document.getElementById('dot-vista-solida');
+            const btn = document.getElementById('btn-vista-solida');
+            if (dot) {
+                dot.className = isSolida ? 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'w-2.5 h-2.5 rounded-full bg-slate-400';
+            }
+            if (btn) {
+                if (isSolida) {
+                    btn.classList.add('border-emerald-500/50', 'text-emerald-600', 'dark:text-emerald-400');
+                } else {
+                    btn.classList.remove('border-emerald-500/50', 'text-emerald-600', 'dark:text-emerald-400');
+                }
+            }
+        }
+
+        function toggleVistaSolida() {
+            const html = document.documentElement;
+            const isSolida = html.classList.toggle('vista-solida');
+            localStorage.setItem('vista_solida', isSolida ? 'true' : 'false');
+            updateVistaSolidaUI(isSolida);
         }
 
         function toggleDarkMode() {
@@ -165,9 +197,13 @@
             const isDark = html.classList.contains('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             
-            document.getElementById('icon-moon').classList.toggle('hidden', isDark);
-            document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
+            document.getElementById('icon-moon')?.classList.toggle('hidden', isDark);
+            document.getElementById('icon-sun')?.classList.toggle('hidden', !isDark);
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateVistaSolidaUI(document.documentElement.classList.contains('vista-solida'));
+        });
     </script>
     
     <!-- Carga ordenada de módulos para escalabilidad -->

@@ -255,10 +255,10 @@ function generarHtmlCard(n) {
                     </div>
                 </div>
                 <div class="flex items-center gap-1 shrink-0">
-                    <button class="w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
+                    <button class="btn-card-edit w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                     </button>
-                    <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 ${n.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Ocupado' : 'Asignar / Ocupar'}">
+                    <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="btn-card-resolve w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 ${n.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Ocupado' : 'Asignar / Ocupar'}">
                         <svg class="w-5 h-5 stroke-[1.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
@@ -276,7 +276,7 @@ function generarHtmlCard(n) {
                     <input type="text" class="bg-black/10 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-black w-14 outline-none focus:bg-black/20 focus:w-20 transition-all placeholder:text-black/40" placeholder="@" oninput="filtrarMenciones(this, ${n.id})" onfocus="filtrarMenciones(this, ${n.id})" data-card-id="${n.id}">
                     <div class="mention-dropdown hidden absolute z-50 bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-2xl max-h-32 overflow-y-auto w-36" id="mention-drop-libre-${n.id}"></div>
                 </div>
-                ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-black/20 text-black px-2 py-0.5 rounded-md font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="ml-1 px-1.5 py-0.5 rounded hover:bg-black/20 text-black/70 hover:text-red-700 transition-all cursor-pointer font-black text-xs inline-flex items-center justify-center leading-none" title="Quitar mención">✕</button></span>`).join('') : ''}
+                ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-black/20 text-black px-2 py-0.5 rounded-md font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="btn-mention-remove ml-1 px-1.5 py-0.5 rounded hover:bg-black/20 text-black/70 hover:text-red-700 transition-all cursor-pointer font-black text-xs inline-flex items-center justify-center leading-none" title="Quitar mención">✕</button></span>`).join('') : ''}
                 ${timeFormatted ? `<span class="text-black/60 font-bold tracking-wide ml-auto">${timeFormatted}</span>` : ''}
             </div>
         </article>`;
@@ -306,10 +306,10 @@ function generarHtmlCard(n) {
                 </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-                <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500/20 text-emerald-500 cursor-default' : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Resuelto' : 'Marcar como resuelto'}">
+                <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="btn-card-resolve w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500/20 text-emerald-500 cursor-default' : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Resuelto' : 'Marcar como resuelto'}">
                     <svg class="w-3.5 h-3.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
                 </button>
-                <button class="w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:text-indigo-500 dark:hover:text-indigo-400 text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
+                <button class="btn-card-edit w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:text-indigo-500 dark:hover:text-indigo-400 text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                 </button>
             </div>
@@ -328,7 +328,7 @@ function generarHtmlCard(n) {
                 <input type="text" class="bg-transparent border border-dashed border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 w-16 outline-none focus:border-indigo-400 focus:w-24 transition-all placeholder:text-slate-400" placeholder="@" oninput="filtrarMenciones(this, ${n.id})" onfocus="filtrarMenciones(this, ${n.id})" data-card-id="${n.id}">
                 <div class="mention-dropdown hidden absolute z-50 bottom-full left-0 mb-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl max-h-32 overflow-y-auto w-36" id="mention-drop-${n.id}"></div>
             </div>
-            ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="ml-1 px-1.5 py-0.5 rounded hover:bg-rose-500/20 hover:text-rose-500 transition-all cursor-pointer font-black text-xs inline-flex items-center justify-center leading-none" title="Quitar mención">✕</button></span>`).join('') : ''}
+            ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="btn-mention-remove ml-1 px-1.5 py-0.5 rounded hover:bg-rose-500/20 hover:text-rose-500 transition-all cursor-pointer font-black text-xs inline-flex items-center justify-center leading-none" title="Quitar mención">✕</button></span>`).join('') : ''}
             ${timeFormatted ? `<span class="shrink-0 flex items-center gap-1 tracking-wider ml-auto">
                 🕒 ${timeFormatted}
             </span>` : ''}
