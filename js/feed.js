@@ -85,7 +85,8 @@ function renderizar() {
         'BAJA_DIAGRAMA': { titulo: 'BAJA / TÉRMINO DE DIAGRAMA', colorText: 'text-red-500', borderColor: 'border-red-500', items: [] },
         'REPARACION': { titulo: 'REPARACIONES REQUERIDAS', colorText: 'text-indigo-500', borderColor: 'border-indigo-500', items: [] },
         'CERTIFICACION_UNIDAD': { titulo: 'CERTIFICACIONES DE UNIDAD', colorText: 'text-orange-400', borderColor: 'border-orange-300', items: [] },
-        'EXAMEN_CHOFER': { titulo: 'EXÁMENES / VENCIMIENTOS', colorText: 'text-emerald-500', borderColor: 'border-emerald-500', items: [] }
+        'EXAMEN_CHOFER': { titulo: 'EXÁMENES / VENCIMIENTOS', colorText: 'text-emerald-500', borderColor: 'border-emerald-500', items: [] },
+        'ESTADO_DEMORA': { titulo: 'ESTADO / DEMORA', colorText: 'text-[#D28976]', borderColor: 'border-[#D28976]', items: [] }
     };
 
     activas.forEach(n => {
@@ -284,6 +285,7 @@ function generarHtmlCard(n) {
     if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { bg: 'bg-orange-50/50 dark:bg-orange-950/20', text: 'text-orange-600 dark:text-orange-500', border: 'border-orange-200/50 dark:border-orange-900/30' };
     if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { bg: 'bg-emerald-50/50 dark:bg-emerald-950/20', text: 'text-emerald-600 dark:text-emerald-500', border: 'border-emerald-200/50 dark:border-emerald-900/30' };
     if (n.tipo_novedad === 'REPARACION') cfg = { bg: 'bg-indigo-50/50 dark:bg-indigo-950/20', text: 'text-indigo-600 dark:text-indigo-500', border: 'border-indigo-200/50 dark:border-indigo-900/30' };
+    if (n.tipo_novedad === 'ESTADO_DEMORA') cfg = { bg: 'bg-[#D28976]/10 dark:bg-[#D28976]/20', text: 'text-[#D28976]', border: 'border-[#D28976]/30' };
 
     let cardClass = n.resuelto 
         ? "bg-emerald-50/20 dark:bg-emerald-950/10 border-emerald-200/50 dark:border-emerald-900/30 opacity-75 grayscale-[0.1]" 
