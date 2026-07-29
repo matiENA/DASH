@@ -29,7 +29,8 @@ fetch(`${API_URL}/api/novedades`)
 // Escuchadores de eventos de actualización en tiempo real
 socket.on('datos_actualizados', (data) => { 
     if(data && data.diagramas) {
-        RAM_Flota = data.diagramas.diagramas; 
+        RAM_Flota = data.diagramas;
+        renderizar(); // 🔄 Auto-actualiza las tarjetas en vivo con los nuevos n_ute, tractor y servicio de la RAM
     }
 });
 

@@ -187,7 +187,23 @@ function formatearTimestamp(ts, id) {
 
 function generarHtmlCard(n) {
     let timeFormatted = formatearTimestamp(n.timestamp, n.id);
-    let uteBadge = (n.n_ute && n.n_ute !== 'S/D') ? n.n_ute : '';
+    
+    // 👉 Búsqueda dinámica en RAM_Flota para auto-actualizar n_ute, tractor y srv si están disponibles en RAM
+    let normNom = (n.nom || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
+    let infoFlota = null;
+    
+    if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
+        if (RAM_Flota.flota && RAM_Flota.flota[normNom]) {
+            infoFlota = RAM_Flota.flota[normNom];
+        } else if (Array.isArray(RAM_Flota)) {
+            infoFlota = RAM_Flota.find(c => String(c.nom || c.nombre || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ') === normNom);
+        }
+    }
+
+    let tractorFinal = (infoFlota && infoFlota.tractor) ? infoFlota.tractor : (n.tractor || '');
+    let srvFinal = (infoFlota && infoFlota.servicio) ? infoFlota.servicio : (n.srv || 'S/A');
+    let uteRaw = (infoFlota && infoFlota.n_ute) ? infoFlota.n_ute : (n.n_ute || '');
+    let uteBadge = (uteRaw && uteRaw !== 'S/D') ? uteRaw : '';
 
     // DISEÑO ÚNICO PARA "LIBRES" CON COLOR CYAN SÓLIDO (#00FFFF) SEGÚN FIGMA
     if (n.tipo_novedad === 'LIBRES') {
@@ -199,9 +215,9 @@ function generarHtmlCard(n) {
                 <div class="flex flex-col min-w-0 pr-2 justify-center">
                     <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight">${n.nom}</h3>
                     <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${n.srv || 'S/A'}</span>
+                        <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${srvFinal}</span>
                         ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
-                        <span class="text-[12px] font-extrabold text-black tracking-wide">${n.tractor || ''}</span>
+                        <span class="text-[12px] font-extrabold text-black tracking-wide">${tractorFinal}</span>
                     </div>
                 </div>
                 <div class="flex items-center gap-1 shrink-0">
@@ -243,9 +259,9 @@ function generarHtmlCard(n) {
             <div class="flex flex-col min-w-0 pr-3">
                 <h3 class="font-extrabold ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-sm sm:text-base leading-tight uppercase truncate w-full tracking-tight">${n.nom}</h3>
                 <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${n.srv || 'S/A'}</span>
+                    <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${srvFinal}</span>
                     ${uteBadge ? `<span class="border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase">${uteBadge}</span>` : ''}
-                    <span class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide">${n.tractor}</span>
+                    <span class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide">${tractorFinal}</span>
                     ${n.fecha_objetivo ? `<span class="px-1.5 py-0.5 text-[9px] font-black ${cfg.text} whitespace-nowrap rounded border ${cfg.border}">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
                 </div>
             </div>
