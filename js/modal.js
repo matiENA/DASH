@@ -1,4 +1,4 @@
-﻿function abrirModalNueva() {
+function abrirModalNueva() {
     const sesion = obtenerUsuarioSesion();
     if (!sesion || !sesion.usuario) {
         toggleDropdownLogin(true);
@@ -78,7 +78,8 @@ function enviarNovedad(e) {
         tipo_novedad: tipoSeleccionado,
         fecha_objetivo: document.getElementById('input-fecha').value,
         detalle: extraDetalle + document.getElementById('input-detalle').value,
-        creador: creadorNom
+        creador: creadorNom,
+        menciones: []
     };
 
     const editIdInput = document.getElementById('input-edit-id');

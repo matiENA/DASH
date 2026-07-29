@@ -10,6 +10,7 @@ socket.on('connect', () => {
         .then(data => {
             if (data && data.diagramas && data.diagramas.diagramas) {
                 RAM_Flota = data.diagramas.diagramas;
+                if (data.usuarios) RAM_Usuarios = data.usuarios;
             }
         })
         .catch(e => console.error("Error al obtener datos iniciales de la flota:", e));
@@ -30,6 +31,7 @@ fetch(`${API_URL}/api/novedades`)
 socket.on('datos_actualizados', (data) => { 
     if(data && data.diagramas) {
         RAM_Flota = data.diagramas;
+        if (data.usuarios) RAM_Usuarios = data.usuarios;
         renderizar(); // 🔄 Auto-actualiza las tarjetas en vivo con los nuevos n_ute, tractor y servicio de la RAM
     }
 });

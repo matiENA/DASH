@@ -2,16 +2,14 @@ let autoScrollIntervals = [];
 
 function cambiarVista(vista) {
     vistaActual = vista;
-    const btnP = document.getElementById('btn-pendientes');
-    const btnR = document.getElementById('btn-resueltos');
+    const tabIds = ['btn-todas', 'btn-archivo', 'btn-mis_novedades', 'btn-menciones'];
+    const activeClass = 'flex-1 px-4 py-1.5 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 text-center whitespace-nowrap';
+    const inactiveClass = 'flex-1 px-4 py-1.5 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 text-center whitespace-nowrap';
     
-    if(vista === 'pendientes') {
-        btnP.className = 'flex-1 py-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center gap-1.5';
-        btnR.className = 'flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 flex items-center justify-center gap-1.5';
-    } else {
-        btnR.className = 'flex-1 py-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center gap-1.5';
-        btnP.className = 'flex-1 py-2 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 flex items-center justify-center gap-1.5';
-    }
+    tabIds.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.className = (id === 'btn-' + vista) ? activeClass : inactiveClass;
+    });
     renderizar();
 }
 
@@ -27,10 +25,13 @@ function renderizar() {
     autoScrollIntervals.forEach(clearInterval);
     autoScrollIntervals = [];
 
+    const sesion = (typeof obtenerUsuarioSesion === 'function') ? obtenerUsuarioSesion() : null;
+    const usuarioActual = sesion && sesion.usuario ? sesion.usuario.toUpperCase() : '';
+    
     const activas = RAM_Novedades.filter(n => !n.resuelto).sort((a, b) => b.id - a.id);
     const resueltasTodas = RAM_Novedades.filter(n => n.resuelto).sort((a, b) => b.id - a.id);
 
-    if (vistaActual === 'resueltos') {
+    if (vistaActual === 'archivo') {
         if (resueltasTodas.length === 0) {
             container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-14 h-14 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="font-extrabold tracking-widest uppercase text-xs">Sin historial de resueltos</span></div>`;
             return;
@@ -42,6 +43,36 @@ function renderizar() {
         htmlResueltos += `</div>`;
         
         container.innerHTML = htmlResueltos;
+        return;
+    }
+
+    // VISTA: MIS NOVEDADES (creadas por el usuario actual)
+    if (vistaActual === 'mis_novedades') {
+        const misNov = RAM_Novedades.filter(n => !n.resuelto && String(n.creador || '').toUpperCase() === usuarioActual).sort((a, b) => b.id - a.id);
+        if (misNov.length === 0) {
+            container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><span class="font-extrabold tracking-widest uppercase text-xs">No tenés novedades propias pendientes</span></div>`;
+            return;
+        }
+        const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
+        let html = `<div class="${gridClass}">`;
+        misNov.forEach(n => { html += generarHtmlCard(n); });
+        html += `</div>`;
+        container.innerHTML = html;
+        return;
+    }
+
+    // VISTA: MENCIONES (novedades donde el usuario actual está mencionado)
+    if (vistaActual === 'menciones') {
+        const mencionadas = RAM_Novedades.filter(n => !n.resuelto && Array.isArray(n.menciones) && n.menciones.includes(usuarioActual)).sort((a, b) => b.id - a.id);
+        if (mencionadas.length === 0) {
+            container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><span class="font-extrabold tracking-widest uppercase text-xs">No te mencionaron en ninguna novedad</span></div>`;
+            return;
+        }
+        const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
+        let html = `<div class="${gridClass}">`;
+        mencionadas.forEach(n => { html += generarHtmlCard(n); });
+        html += `</div>`;
+        container.innerHTML = html;
         return;
     }
 
@@ -233,12 +264,17 @@ function generarHtmlCard(n) {
             <div class="mt-2 bg-black/10 rounded-lg p-2.5 overflow-y-auto custom-scrollbar max-h-24">
                 <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-wrap break-words">${n.detalle}</p>
             </div>` : ''}
-            <div class="flex items-center justify-between text-[10px] font-black text-black uppercase mt-1">
-                <span class="flex items-center gap-1">
+            <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-black text-black uppercase mt-1">
+                <span class="flex items-center gap-1 shrink-0">
                     <span class="text-purple-700">👤</span>
                     <span>${n.creador || n.usuario || 'USER'}</span>
                 </span>
-                ${timeFormatted ? `<span class="text-black/60 font-bold tracking-wide">${timeFormatted}</span>` : ''}
+                <div class="relative inline-block mention-input-wrapper">
+                    <input type="text" class="bg-black/10 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-black w-14 outline-none focus:bg-black/20 focus:w-20 transition-all placeholder:text-black/40" placeholder="@" oninput="filtrarMenciones(this, ${n.id})" onfocus="filtrarMenciones(this, ${n.id})" data-card-id="${n.id}">
+                    <div class="mention-dropdown hidden absolute z-50 bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-2xl max-h-32 overflow-y-auto w-36" id="mention-drop-libre-${n.id}"></div>
+                </div>
+                ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-black/20 text-black px-1.5 py-0.5 rounded font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="hover:text-red-700 transition-colors ml-0.5 cursor-pointer">×</button></span>`).join('') : ''}
+                ${timeFormatted ? `<span class="text-black/60 font-bold tracking-wide ml-auto">${timeFormatted}</span>` : ''}
             </div>
         </article>`;
     }
@@ -280,11 +316,16 @@ function generarHtmlCard(n) {
             <p class="${cfg.text} text-xs font-semibold font-zilla leading-relaxed whitespace-pre-wrap break-words">${n.detalle}</p>
         </div>` : ''}
 
-        <div class="flex justify-between items-center text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-auto">
-            <span class="truncate pr-2 uppercase flex items-center gap-1" title="Creador">
+        <div class="flex flex-wrap items-center gap-1.5 text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-auto">
+            <span class="uppercase flex items-center gap-1 shrink-0" title="Creador">
                 👤 ${n.creador || n.usuario || 'Anónimo'}
             </span>
-            ${timeFormatted ? `<span class="shrink-0 flex items-center gap-1 tracking-wider">
+            <div class="relative inline-block mention-input-wrapper">
+                <input type="text" class="bg-transparent border border-dashed border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 w-16 outline-none focus:border-indigo-400 focus:w-24 transition-all placeholder:text-slate-400" placeholder="@" oninput="filtrarMenciones(this, ${n.id})" onfocus="filtrarMenciones(this, ${n.id})" data-card-id="${n.id}">
+                <div class="mention-dropdown hidden absolute z-50 bottom-full left-0 mb-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl max-h-32 overflow-y-auto w-36" id="mention-drop-${n.id}"></div>
+            </div>
+            ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="hover:text-rose-500 transition-colors ml-0.5 cursor-pointer">×</button></span>`).join('') : ''}
+            ${timeFormatted ? `<span class="shrink-0 flex items-center gap-1 tracking-wider ml-auto">
                 🕒 ${timeFormatted}
             </span>` : ''}
         </div>
@@ -292,7 +333,7 @@ function generarHtmlCard(n) {
 }
 
 function resolver(id) {
-    if (vistaActual === 'resueltos') return;
+    if (vistaActual === 'archivo') return;
     
     const card = document.getElementById(`card-${id}`);
     if (card) {
@@ -412,5 +453,76 @@ document.addEventListener('click', (e) => {
         if (!quickDrop.contains(e.target) && !quickBtn.contains(e.target)) {
             quickDrop.classList.add('hidden');
         }
+    }
+});
+
+// ==============================================================
+// SISTEMA DE MENCIONES INLINE (@)
+// ==============================================================
+function filtrarMenciones(input, cardId) {
+    const val = input.value.replace('@', '').trim().toLowerCase();
+    // Find the dropdown - try both regular and libre card IDs
+    let drop = document.getElementById(`mention-drop-${cardId}`) || document.getElementById(`mention-drop-libre-${cardId}`);
+    if (!drop) {
+        // Fallback: find nearest dropdown
+        drop = input.parentElement.querySelector('.mention-dropdown');
+    }
+    if (!drop) return;
+
+    const usuarios = (typeof RAM_Usuarios !== 'undefined' && Array.isArray(RAM_Usuarios)) ? RAM_Usuarios : [];
+    if (usuarios.length === 0 || val.length === 0) {
+        drop.classList.add('hidden');
+        return;
+    }
+
+    // Get current mentions to exclude already-mentioned users
+    const nov = (RAM_Novedades || []).find(n => String(n.id) === String(cardId));
+    const yaEnMenciones = (nov && Array.isArray(nov.menciones)) ? nov.menciones : [];
+
+    const filtrados = usuarios.filter(u => 
+        u.toLowerCase().includes(val) && !yaEnMenciones.includes(u)
+    ).slice(0, 6);
+
+    if (filtrados.length === 0) {
+        drop.classList.add('hidden');
+        return;
+    }
+
+    drop.innerHTML = filtrados.map(u => 
+        `<div onclick="agregarMencion(${cardId}, '${u.replace(/'/g, "\\'")}', this)" class="px-3 py-2 text-xs font-extrabold text-slate-800 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer transition-colors uppercase">${u}</div>`
+    ).join('');
+    drop.classList.remove('hidden');
+}
+
+function agregarMencion(cardId, usuario, el) {
+    // Hide dropdown and clear input
+    const wrapper = el ? el.closest('.mention-input-wrapper') : null;
+    if (wrapper) {
+        const input = wrapper.querySelector('input');
+        const drop = wrapper.querySelector('.mention-dropdown');
+        if (input) input.value = '';
+        if (drop) drop.classList.add('hidden');
+    }
+
+    // Send to server
+    fetch(`${API_URL}/api/novedades/mencion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_novedad: String(cardId), usuario: usuario, accion: 'agregar' })
+    }).catch(e => console.error('Error agregando mención:', e));
+}
+
+function quitarMencion(cardId, usuario) {
+    fetch(`${API_URL}/api/novedades/mencion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_novedad: String(cardId), usuario: usuario, accion: 'quitar' })
+    }).catch(e => console.error('Error quitando mención:', e));
+}
+
+// Close mention dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.mention-input-wrapper')) {
+        document.querySelectorAll('.mention-dropdown').forEach(d => d.classList.add('hidden'));
     }
 });

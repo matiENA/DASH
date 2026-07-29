@@ -4,4 +4,5 @@ const API_URL = 'https://diagramasnode.onrender.com';
 // Estado global de la aplicación compartido entre módulos
 let RAM_Flota = [];
 let RAM_Novedades = [];
-let vistaActual = 'pendientes';
+let RAM_Usuarios = [];
+let vistaActual = 'todas';
