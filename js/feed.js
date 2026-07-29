@@ -127,6 +127,8 @@ function renderizar() {
         if (key === 'LIBRES') return;
         
         const cat = categorias[key];
+        if (cat.items.length === 0) return; // 🚫 Ocultar contenedores de clasificación vacíos
+        
         let carouselId = `carrusel-cat-${index}`;
         idsCarruseles.push(carouselId);
 
@@ -274,7 +276,7 @@ function generarHtmlCard(n) {
                     <input type="text" class="bg-black/10 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-black w-14 outline-none focus:bg-black/20 focus:w-20 transition-all placeholder:text-black/40" placeholder="@" oninput="filtrarMenciones(this, ${n.id})" onfocus="filtrarMenciones(this, ${n.id})" data-card-id="${n.id}">
                     <div class="mention-dropdown hidden absolute z-50 bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-2xl max-h-32 overflow-y-auto w-36" id="mention-drop-libre-${n.id}"></div>
                 </div>
-                ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-black/20 text-black px-1.5 py-0.5 rounded font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="hover:text-red-700 transition-colors ml-0.5 cursor-pointer">×</button></span>`).join('') : ''}
+                ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-black/20 text-black px-2 py-0.5 rounded-md font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="ml-1 px-1.5 py-0.5 rounded hover:bg-black/20 text-black/70 hover:text-red-700 transition-all cursor-pointer font-black text-xs inline-flex items-center justify-center leading-none" title="Quitar mención">✕</button></span>`).join('') : ''}
                 ${timeFormatted ? `<span class="text-black/60 font-bold tracking-wide ml-auto">${timeFormatted}</span>` : ''}
             </div>
         </article>`;
@@ -326,7 +328,7 @@ function generarHtmlCard(n) {
                 <input type="text" class="bg-transparent border border-dashed border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 w-16 outline-none focus:border-indigo-400 focus:w-24 transition-all placeholder:text-slate-400" placeholder="@" oninput="filtrarMenciones(this, ${n.id})" onfocus="filtrarMenciones(this, ${n.id})" data-card-id="${n.id}">
                 <div class="mention-dropdown hidden absolute z-50 bottom-full left-0 mb-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl max-h-32 overflow-y-auto w-36" id="mention-drop-${n.id}"></div>
             </div>
-            ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="hover:text-rose-500 transition-colors ml-0.5 cursor-pointer">×</button></span>`).join('') : ''}
+            ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="ml-1 px-1.5 py-0.5 rounded hover:bg-rose-500/20 hover:text-rose-500 transition-all cursor-pointer font-black text-xs inline-flex items-center justify-center leading-none" title="Quitar mención">✕</button></span>`).join('') : ''}
             ${timeFormatted ? `<span class="shrink-0 flex items-center gap-1 tracking-wider ml-auto">
                 🕒 ${timeFormatted}
             </span>` : ''}
