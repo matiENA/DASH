@@ -144,6 +144,19 @@ function adaptarFormulario(tipo) {
         else divCert.classList.add('hidden');
     }
 
+    const divTerm = document.getElementById('div-terminal');
+    if (divTerm) {
+        if (tipo === 'LIBRES') {
+            divTerm.classList.remove('hidden');
+        } else {
+            divTerm.classList.add('hidden');
+            terminalSeleccionada = '';
+            const inpTerm = document.getElementById('input-terminal');
+            if (inpTerm) inpTerm.value = '';
+            actualizarUITerminalRadio();
+        }
+    }
+
     const btn = document.getElementById('btn-submit');
     if (btn) {
         btn.disabled = !tipo;

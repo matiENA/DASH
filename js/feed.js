@@ -244,8 +244,8 @@ function generarHtmlCard(n) {
         let tieneDetalle = n.detalle && n.detalle.trim().length > 0;
         let cardHeight = tieneDetalle ? 'min-h-[90px] py-3' : 'min-h-[85px] py-2.5';
         return `
-        <article id="card-${n.id}" class="rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 ${cardHeight}">
-            <div class="flex flex-col w-full">
+        <article id="card-${n.id}" class="rounded-xl p-3 relative transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 ${cardHeight}">
+            <div class="card-inner-content flex flex-col w-full transition-opacity duration-200">
                 <!-- ROW 1: NOMBRE Y BOTONES DE ACCIÓN (ESQUINA SUPERIOR DERECHA) -->
                 <div class="flex items-start justify-between w-full -mt-0.5 mb-1">
                     <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight flex-1 pr-1">${n.nom}</h3>
@@ -264,27 +264,30 @@ function generarHtmlCard(n) {
                     <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${srvFinal}</span>
                     ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
                     <span class="text-[12px] font-extrabold text-black tracking-wide">${tractorFinal}</span>
-                    ${obtenerHtmlBadgeTerminal(n)}
+                    ${obtenerHtmlButtonTerminal(n)}
+                </div>
+
+                ${tieneDetalle ? `
+                <div class="mt-2 bg-black/10 rounded-lg p-2.5 overflow-y-auto custom-scrollbar max-h-24">
+                    <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-wrap break-words">${n.detalle}</p>
+                </div>` : ''}
+
+                <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-black text-black uppercase mt-2">
+                    <span class="flex items-center gap-1 shrink-0">
+                        <span class="text-purple-700">👤</span>
+                        <span>${n.creador || n.usuario || 'USER'}</span>
+                    </span>
+                    <div class="relative inline-block mention-input-wrapper">
+                        <input type="text" class="bg-black/10 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-black w-14 outline-none focus:bg-black/20 focus:w-20 transition-all placeholder:text-black/40" placeholder="@" oninput="filtrarMenciones(this, ${n.id})" onfocus="filtrarMenciones(this, ${n.id})" data-card-id="${n.id}">
+                        <div class="mention-dropdown hidden absolute z-50 bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-2xl max-h-32 overflow-y-auto w-36" id="mention-drop-libre-${n.id}"></div>
+                    </div>
+                    ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-black/20 text-black px-2 py-0.5 rounded-md font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="btn-mention-remove ml-1 px-1.5 py-0.5 rounded hover:bg-black/20 text-black/70 hover:text-red-700 transition-all cursor-pointer font-black text-xs inline-flex items-center justify-center leading-none" title="Quitar mención">✕</button></span>`).join('') : ''}
+                    ${timeFormatted ? `<span class="text-black/60 font-bold tracking-wide ml-auto">${timeFormatted}</span>` : ''}
                 </div>
             </div>
 
-            ${tieneDetalle ? `
-            <div class="mt-2 bg-black/10 rounded-lg p-2.5 overflow-y-auto custom-scrollbar max-h-24">
-                <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-wrap break-words">${n.detalle}</p>
-            </div>` : ''}
-
-            <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-black text-black uppercase mt-2">
-                <span class="flex items-center gap-1 shrink-0">
-                    <span class="text-purple-700">👤</span>
-                    <span>${n.creador || n.usuario || 'USER'}</span>
-                </span>
-                <div class="relative inline-block mention-input-wrapper">
-                    <input type="text" class="bg-black/10 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-black w-14 outline-none focus:bg-black/20 focus:w-20 transition-all placeholder:text-black/40" placeholder="@" oninput="filtrarMenciones(this, ${n.id})" onfocus="filtrarMenciones(this, ${n.id})" data-card-id="${n.id}">
-                    <div class="mention-dropdown hidden absolute z-50 bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-2xl max-h-32 overflow-y-auto w-36" id="mention-drop-libre-${n.id}"></div>
-                </div>
-                ${(Array.isArray(n.menciones) && n.menciones.length > 0) ? n.menciones.map(m => `<span class="bg-black/20 text-black px-2 py-0.5 rounded-md font-black uppercase flex items-center gap-1">@${m}<button onclick="quitarMencion(${n.id}, '${m.replace(/'/g, "\\'")}')" class="btn-mention-remove ml-1 px-1.5 py-0.5 rounded hover:bg-black/20 text-black/70 hover:text-red-700 transition-all cursor-pointer font-black text-xs inline-flex items-center justify-center leading-none" title="Quitar mención">✕</button></span>`).join('') : ''}
-                ${timeFormatted ? `<span class="text-black/60 font-bold tracking-wide ml-auto">${timeFormatted}</span>` : ''}
-            </div>
+            <!-- DESPLEGABLE FUERA DE card-inner-content (MANTIENE 100% OPACIDAD VIBRANTE) -->
+            ${obtenerHtmlDropdownTerminal(n)}
         </article>`;
     }
 
@@ -315,12 +318,11 @@ function generarHtmlCard(n) {
                 </div>
             </div>
 
-            <!-- FILA ÚNICA DE DATOS: SRV, UTE, TRACTOR, TERMINAL BADGE, FECHA -->
+            <!-- FILA ÚNICA DE DATOS: SRV, UTE, TRACTOR, FECHA (SIN TERMINAL EN OTRAS CLASIFICACIONES) -->
             <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${srvFinal}</span>
                 ${uteBadge ? `<span class="border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase">${uteBadge}</span>` : ''}
                 <span class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide">${tractorFinal}</span>
-                ${obtenerHtmlBadgeTerminal(n)}
                 ${n.fecha_objetivo ? `<span class="px-1.5 py-0.5 text-[9px] font-black ${cfg.text} whitespace-nowrap rounded border ${cfg.border}">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
             </div>
         </div>
@@ -544,53 +546,105 @@ const CONFIG_TERMINALES_FEED = {
     'AÑELO': { bg: '#DECBC6', text: '#000000' }
 };
 
-function obtenerHtmlBadgeTerminal(n) {
+function obtenerHtmlButtonTerminal(n) {
     const term = (n.terminal || '').toUpperCase().trim();
-    if (!term || !CONFIG_TERMINALES_FEED[term]) {
+    const cfg = CONFIG_TERMINALES_FEED[term];
+
+    if (!term || !cfg) {
         return `
-        <div class="relative inline-block text-left">
-            <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-black/10 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-black/20 dark:hover:bg-white/20 transition-all flex items-center gap-1 cursor-pointer" title="Asignar Terminal">
-                <span>+ TERMINAL</span>
-            </button>
-            <div id="drop-terminal-card-${n.id}" class="hidden absolute left-0 top-full mt-1 z-[60] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden py-1 w-28">
-                ${Object.keys(CONFIG_TERMINALES_FEED).map(t => {
-                    const cfg = CONFIG_TERMINALES_FEED[t];
-                    return `<div onclick="cambiarTerminalCard(${n.id}, '${t}')" class="px-2.5 py-1 text-[10px] font-black uppercase cursor-pointer hover:opacity-80 transition-all flex items-center justify-between" style="background-color: ${cfg.bg}; color: ${cfg.text};"><span>${t}</span></div>`;
-                }).join('')}
-            </div>
-        </div>`;
+        <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-black/10 dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-black/20 dark:hover:bg-white/20 transition-all flex items-center gap-1 cursor-pointer" title="Asignar Terminal">
+            <span>+ TERMINAL</span>
+        </button>`;
     }
 
-    const cfg = CONFIG_TERMINALES_FEED[term];
     return `
-    <div class="relative inline-block text-left">
-        <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-transform active:scale-95 cursor-pointer flex items-center gap-1 shadow-xs" style="background-color: ${cfg.bg}; color: ${cfg.text};" title="Cambiar Terminal">
-            <span>${term}</span>
-        </button>
-        <div id="drop-terminal-card-${n.id}" class="hidden absolute left-0 top-full mt-1 z-[60] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden py-1 w-28">
-            ${Object.keys(CONFIG_TERMINALES_FEED).map(t => {
-                const c = CONFIG_TERMINALES_FEED[t];
-                return `<div onclick="cambiarTerminalCard(${n.id}, '${t}')" class="px-2.5 py-1 text-[10px] font-black uppercase cursor-pointer hover:opacity-80 transition-all flex items-center justify-between" style="background-color: ${c.bg}; color: ${c.text};"><span>${t}</span></div>`;
-            }).join('')}
-            <div onclick="cambiarTerminalCard(${n.id}, '')" class="px-2.5 py-1 text-[9px] font-extrabold uppercase cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-500 transition-all text-center">Quitar</div>
-        </div>
+    <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-transform active:scale-95 cursor-pointer flex items-center gap-1 shadow-xs" style="background-color: ${cfg.bg}; color: ${cfg.text};" title="Cambiar Terminal">
+        <span>${term}</span>
+    </button>`;
+}
+
+function obtenerHtmlDropdownTerminal(n) {
+    const term = (n.terminal || '').toUpperCase().trim();
+    return `
+    <div id="drop-terminal-card-${n.id}" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-1 items-end py-0.5 select-none pointer-events-auto opacity-100">
+        ${Object.keys(CONFIG_TERMINALES_FEED).map(t => {
+            const c = CONFIG_TERMINALES_FEED[t];
+            return `<div onclick="cambiarTerminalCard(${n.id}, '${t}', event)" class="px-3 py-0.5 rounded-lg text-[9px] font-black uppercase cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-md flex items-center justify-center tracking-wide opacity-100" style="background-color: ${c.bg}; color: ${c.text}; min-width: 85px;">${t}</div>`;
+        }).join('')}
+        ${term ? `<div onclick="cambiarTerminalCard(${n.id}, '', event)" class="px-2.5 py-0.5 rounded-lg text-[8px] font-black uppercase cursor-pointer bg-slate-900 text-white hover:bg-rose-600 transition-all shadow-md border border-white/20 opacity-100">✕ Quitar</div>` : ''}
     </div>`;
 }
 
 function toggleDropdownTerminalCard(cardId, event) {
     if (event) event.stopPropagation();
     const drop = document.getElementById(`drop-terminal-card-${cardId}`);
+    const card = document.getElementById(`card-${cardId}`);
+
+    // Reset all other open terminal drops and dimmed cards
     document.querySelectorAll('[id^="drop-terminal-card-"]').forEach(d => {
         if (d !== drop) d.classList.add('hidden');
     });
-    if (drop) drop.classList.toggle('hidden');
+    document.querySelectorAll('.card-dimmed').forEach(c => {
+        if (c !== card) {
+            c.classList.remove('card-dimmed');
+            const inner = c.querySelector('.card-inner-content');
+            if (inner) inner.classList.remove('opacity-30');
+        }
+    });
+
+    if (drop) {
+        const isOpening = drop.classList.contains('hidden');
+        drop.classList.toggle('hidden');
+        if (card) {
+            const inner = card.querySelector('.card-inner-content');
+            if (isOpening) {
+                card.classList.add('card-dimmed');
+                if (inner) inner.classList.add('opacity-30');
+            } else {
+                card.classList.remove('card-dimmed');
+                if (inner) inner.classList.remove('opacity-30');
+            }
+        }
+    }
 }
 
-function cambiarTerminalCard(cardId, terminal) {
-    fetch(`${API_URL}/api/novedades/terminal`, {
+function cerrarTodosTerminalDropdowns() {
+    document.querySelectorAll('[id^="drop-terminal-card-"]').forEach(d => d.classList.add('hidden'));
+    document.querySelectorAll('.card-dimmed').forEach(c => {
+        c.classList.remove('card-dimmed');
+        const inner = c.querySelector('.card-inner-content');
+        if (inner) inner.classList.remove('opacity-30');
+    });
+}
+
+function cambiarTerminalCard(cardId, terminal, event) {
+    if (event) event.stopPropagation();
+    cerrarTodosTerminalDropdowns();
+
+    const nov = (RAM_Novedades || []).find(x => String(x.id) === String(cardId));
+    if (!nov) return;
+
+    // Actualización optimista en RAM local y re-render inmediato
+    nov.terminal = terminal;
+    if (typeof renderizar === 'function') renderizar();
+
+    const payload = {
+        nom: nov.nom || '',
+        tractor: nov.tractor || '',
+        srv: nov.srv || 'S/A',
+        n_ute: nov.n_ute || 'S/D',
+        tipo_novedad: nov.tipo_novedad || 'LIBRES',
+        terminal: terminal,
+        fecha_objetivo: nov.fecha_objetivo || '',
+        detalle: nov.detalle || '',
+        creador: nov.creador || nov.usuario || 'Anónimo',
+        menciones: nov.menciones || []
+    };
+
+    fetch(`${API_URL}/api/novedades/actualizar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_novedad: String(cardId), terminal: terminal })
+        body: JSON.stringify({ action: 'editar', id_novedad: String(cardId), payload: payload })
     }).catch(e => console.error('Error actualizando terminal:', e));
 }
 
@@ -599,7 +653,7 @@ document.addEventListener('click', (e) => {
     if (!e.target.closest('.mention-input-wrapper')) {
         document.querySelectorAll('.mention-dropdown').forEach(d => d.classList.add('hidden'));
     }
-    if (!e.target.closest('[id^="drop-terminal-card-"]')) {
-        document.querySelectorAll('[id^="drop-terminal-card-"]').forEach(d => d.classList.add('hidden'));
+    if (!e.target.closest('[id^="drop-terminal-card-"]') && !e.target.closest('button[onclick*="toggleDropdownTerminalCard"]')) {
+        cerrarTodosTerminalDropdowns();
     }
 });
