@@ -1,3 +1,15 @@
+let calendarDate = new Date();
+let selectedDateISO = '';
+
+const CONFIG_CLASIFICACIONES_MODAL = {
+    'LIBRES': { titulo: 'Libres', bg: 'bg-[#00FFFF]', text: 'text-slate-950' },
+    'CERTIFICACION_UNIDAD': { titulo: 'Certificación de unidad', bg: 'bg-[#FFAE42]', text: 'text-slate-950' },
+    'REPARACION': { titulo: 'Reparaciones requeridas', bg: 'bg-[#6366F1]', text: 'text-white' },
+    'BAJA_DIAGRAMA': { titulo: 'Baja / Término de diagrama', bg: 'bg-[#EF4444]', text: 'text-white' },
+    'ESTADO_DEMORA': { titulo: 'Estado / Demora', bg: 'bg-[#D28976]', text: 'text-white' },
+    'EXAMEN_CHOFER': { titulo: 'Exámenes / Vencimientos', bg: 'bg-[#10B981]', text: 'text-white' }
+};
+
 function abrirModalNueva() {
     const sesion = obtenerUsuarioSesion();
     if (!sesion || !sesion.usuario) {
@@ -7,11 +19,28 @@ function abrirModalNueva() {
 
     const modal = document.getElementById('modal-nueva');
     if (modal) {
-        // Resetear form y desactivar botón al abrir
-        const form = document.querySelector('#modal-nueva form');
+        const form = document.querySelector('#modal-paso-2 form');
         if (form) form.reset();
+
+        const editId = document.getElementById('input-edit-id');
+        if (editId) editId.value = '';
+
         const btn = document.getElementById('btn-submit');
-        if (btn) btn.disabled = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = 'PUBLICAR NOVEDAD';
+        }
+
+        // Resetear fecha seleccionada al abrir
+        selectedDateISO = '';
+        calendarDate = new Date();
+        const inpFecha = document.getElementById('input-fecha');
+        if (inpFecha) inpFecha.value = '';
+
+        // Mostrar paso 1 (selección de clasificación) y ocultar paso 2
+        document.getElementById('modal-paso-1')?.classList.remove('hidden');
+        document.getElementById('modal-paso-2')?.classList.add('hidden');
+        document.getElementById('modal-paso-2')?.classList.remove('flex');
 
         modal.classList.remove('hidden');
         setTimeout(() => {
@@ -32,6 +61,46 @@ function cerrarModalNueva() {
     }
 }
 
+function seleccionarClasificacionPaso1(tipo) {
+    const inpTipo = document.getElementById('input-tipo');
+    if (inpTipo) inpTipo.value = tipo;
+
+    const cfg = CONFIG_CLASIFICACIONES_MODAL[tipo] || { titulo: 'Reportar Novedad', bg: 'bg-[#6366F1]', text: 'text-white' };
+
+    const header = document.getElementById('modal-paso-2-header');
+    const titulo = document.getElementById('modal-paso-2-titulo');
+
+    if (header) {
+        header.className = `flex justify-between items-center p-4 transition-colors duration-300 shrink-0 ${cfg.bg} ${cfg.text}`;
+    }
+
+    if (titulo) {
+        titulo.innerText = cfg.titulo;
+    }
+
+    adaptarFormulario(tipo);
+
+    // Renderizar calendario desplegado
+    renderizarCalendarioDeployed();
+
+    // Transición de Paso 1 a Paso 2
+    document.getElementById('modal-paso-1')?.classList.add('hidden');
+    document.getElementById('modal-paso-2')?.classList.remove('hidden');
+    document.getElementById('modal-paso-2')?.classList.add('flex');
+}
+
+function volverPaso1Modal() {
+    const editIdInput = document.getElementById('input-edit-id');
+    // Si estamos editando, cerrar al presionar volver
+    if (editIdInput && editIdInput.value) {
+        cerrarModalNueva();
+        return;
+    }
+    document.getElementById('modal-paso-2')?.classList.add('hidden');
+    document.getElementById('modal-paso-2')?.classList.remove('flex');
+    document.getElementById('modal-paso-1')?.classList.remove('hidden');
+}
+
 function adaptarFormulario(tipo) {
     const fInput = document.getElementById('input-fecha');
     if (fInput) fInput.required = false;
@@ -46,6 +115,67 @@ function adaptarFormulario(tipo) {
     if (btn) {
         btn.disabled = !tipo;
     }
+}
+
+// 📅 LÓGICA DE CALENDARIO DESPLEGADO (DEPLOYED CALENDAR)
+function renderizarCalendarioDeployed() {
+    const grid = document.getElementById('cal-dias-grid');
+    const mesAnoLabel = document.getElementById('cal-mes-ano');
+    if (!grid || !mesAnoLabel) return;
+
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+
+    const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    mesAnoLabel.innerText = `${nombresMeses[month]} ${year}`;
+
+    // Primer día del mes (0=Dom, 1=Lun...) -> ajustar a 0=Lun ... 6=Dom
+    let firstDay = new Date(year, month, 1).getDay();
+    firstDay = (firstDay === 0) ? 6 : firstDay - 1;
+
+    const totalDays = new Date(year, month + 1, 0).getDate();
+
+    let html = '';
+    for (let i = 0; i < firstDay; i++) {
+        html += `<div class="h-8"></div>`;
+    }
+
+    const todayObj = new Date();
+    const todayISO = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+
+    for (let day = 1; day <= totalDays; day++) {
+        const mm = String(month + 1).padStart(2, '0');
+        const dd = String(day).padStart(2, '0');
+        const currentISO = `${year}-${mm}-${dd}`;
+
+        const isSelected = selectedDateISO === currentISO;
+        const isToday = todayISO === currentISO;
+
+        let btnClass = "h-8 w-8 rounded-full flex items-center justify-center mx-auto transition-all cursor-pointer ";
+        if (isSelected) {
+            btnClass += "bg-indigo-600 dark:bg-indigo-500 text-white font-black shadow-md scale-105";
+        } else if (isToday) {
+            btnClass += "border-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-extrabold";
+        } else {
+            btnClass += "text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 font-bold";
+        }
+
+        html += `<button type="button" onclick="seleccionarFechaCalendario('${currentISO}')" class="${btnClass}">${day}</button>`;
+    }
+
+    grid.innerHTML = html;
+}
+
+function cambiarMesCalendario(offset) {
+    calendarDate.setMonth(calendarDate.getMonth() + offset);
+    renderizarCalendarioDeployed();
+}
+
+function seleccionarFechaCalendario(isoStr) {
+    selectedDateISO = isoStr;
+    const inp = document.getElementById('input-fecha');
+    if (inp) inp.value = isoStr;
+    renderizarCalendarioDeployed();
 }
 
 function enviarNovedad(e) {
@@ -188,31 +318,39 @@ function abrirEdicion(id) {
     const editIdInput = document.getElementById('input-edit-id');
     if (editIdInput) editIdInput.value = n.id;
 
-    const tituloModal = document.getElementById('modal-titulo');
-    if (tituloModal) tituloModal.innerText = 'Editar Novedad / Detalle';
-
     document.getElementById('input-nom').value = n.nom || '';
     document.getElementById('input-tractor').value = n.tractor || '';
     document.getElementById('input-srv').value = n.srv || 'S/A';
     document.getElementById('input-ute').value = n.n_ute || '';
-    
-    const selectTipo = document.getElementById('input-tipo');
-    if (selectTipo) {
-        selectTipo.value = n.tipo_novedad || 'LIBRES';
-        adaptarFormulario(n.tipo_novedad);
-    }
-    
-    const inputFecha = document.getElementById('input-fecha');
-    if (inputFecha) inputFecha.value = n.fecha_objetivo || '';
 
     const inputDetalle = document.getElementById('input-detalle');
     if (inputDetalle) inputDetalle.value = n.detalle || '';
+
+    // Configurar fecha en calendario
+    selectedDateISO = n.fecha_objetivo || '';
+    if (selectedDateISO) {
+        const parts = selectedDateISO.split('-');
+        if (parts.length === 3) {
+            calendarDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        }
+    } else {
+        calendarDate = new Date();
+    }
+
+    const inputFecha = document.getElementById('input-fecha');
+    if (inputFecha) inputFecha.value = selectedDateISO;
 
     const btn = document.getElementById('btn-submit');
     if (btn) {
         btn.disabled = false;
         btn.innerText = 'GUARDAR CAMBIOS';
     }
+
+    // Ir directo a Paso 2
+    seleccionarClasificacionPaso1(n.tipo_novedad || 'LIBRES');
+
+    const tituloModal = document.getElementById('modal-paso-2-titulo');
+    if (tituloModal) tituloModal.innerText = `EDITAR: ${n.nom || 'NOVEDAD'}`;
 
     modal.classList.remove('hidden');
     setTimeout(() => {
