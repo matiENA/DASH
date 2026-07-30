@@ -1,5 +1,6 @@
 let calendarDate = new Date();
 let selectedDateISO = '';
+let terminalSeleccionada = '';
 
 const CONFIG_CLASIFICACIONES_MODAL = {
     'LIBRES': { titulo: 'Libres', bg: 'bg-[#00FFFF]', text: 'text-slate-950' },
@@ -9,6 +10,33 @@ const CONFIG_CLASIFICACIONES_MODAL = {
     'ESTADO_DEMORA': { titulo: 'Estado / Demora', bg: 'bg-[#D28976]', text: 'text-white' },
     'EXAMEN_CHOFER': { titulo: 'Exámenes / Vencimientos', bg: 'bg-[#10B981]', text: 'text-white' }
 };
+
+function seleccionarTerminal(val) {
+    if (terminalSeleccionada === val) {
+        terminalSeleccionada = '';
+    } else {
+        terminalSeleccionada = val;
+    }
+    const inp = document.getElementById('input-terminal');
+    if (inp) inp.value = terminalSeleccionada;
+    actualizarUITerminalRadio();
+}
+
+function actualizarUITerminalRadio() {
+    const terminals = ['DOCK SUD', 'TPH', 'AÑELO', 'TLC'];
+    terminals.forEach(t => {
+        const rad = document.getElementById(`radio-terminal-${t}`);
+        if (!rad) return;
+        const inner = rad.querySelector('div');
+        if (t === terminalSeleccionada) {
+            rad.className = 'w-5 h-5 rounded-full border-2 border-slate-900 dark:border-slate-100 flex items-center justify-center transition-all bg-white dark:bg-slate-900';
+            if (inner) inner.className = 'w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-slate-100';
+        } else {
+            rad.className = 'w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-600 flex items-center justify-center transition-all bg-white dark:bg-slate-900 group-hover:border-slate-600';
+            if (inner) inner.className = 'w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-slate-100 hidden';
+        }
+    });
+}
 
 function abrirModalNueva() {
     const sesion = obtenerUsuarioSesion();
@@ -31,11 +59,16 @@ function abrirModalNueva() {
             btn.innerText = 'PUBLICAR NOVEDAD';
         }
 
-        // Resetear fecha seleccionada al abrir
+        // Resetear fecha y terminal seleccionada al abrir
         selectedDateISO = '';
         calendarDate = new Date();
         const inpFecha = document.getElementById('input-fecha');
         if (inpFecha) inpFecha.value = '';
+
+        terminalSeleccionada = '';
+        const inpTerm = document.getElementById('input-terminal');
+        if (inpTerm) inpTerm.value = '';
+        actualizarUITerminalRadio();
 
         // Mostrar paso 1 (selección de clasificación) y ocultar paso 2
         document.getElementById('modal-paso-1')?.classList.remove('hidden');
@@ -206,6 +239,7 @@ function enviarNovedad(e) {
         srv: document.getElementById('input-srv').value,
         n_ute: document.getElementById('input-ute').value || 'S/D',
         tipo_novedad: tipoSeleccionado,
+        terminal: document.getElementById('input-terminal')?.value || terminalSeleccionada || '',
         fecha_objetivo: document.getElementById('input-fecha').value,
         detalle: extraDetalle + document.getElementById('input-detalle').value,
         creador: creadorNom,
@@ -325,6 +359,12 @@ function abrirEdicion(id) {
 
     const inputDetalle = document.getElementById('input-detalle');
     if (inputDetalle) inputDetalle.value = n.detalle || '';
+
+    // Configurar terminal
+    terminalSeleccionada = n.terminal || '';
+    const inputTerminal = document.getElementById('input-terminal');
+    if (inputTerminal) inputTerminal.value = terminalSeleccionada;
+    actualizarUITerminalRadio();
 
     // Configurar fecha en calendario
     selectedDateISO = n.fecha_objetivo || '';

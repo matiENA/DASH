@@ -245,29 +245,35 @@ function generarHtmlCard(n) {
         let cardHeight = tieneDetalle ? 'min-h-[90px] py-3' : 'min-h-[85px] py-2.5';
         return `
         <article id="card-${n.id}" class="rounded-xl p-3 relative overflow-hidden transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 ${cardHeight}">
-            <div class="flex items-start justify-between w-full">
-                <div class="flex flex-col min-w-0 pr-2 justify-center">
-                    <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight">${n.nom}</h3>
-                    <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${srvFinal}</span>
-                        ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
-                        <span class="text-[12px] font-extrabold text-black tracking-wide">${tractorFinal}</span>
+            <div class="flex flex-col w-full">
+                <!-- ROW 1: NOMBRE Y BOTONES DE ACCIÓN (ESQUINA SUPERIOR DERECHA) -->
+                <div class="flex items-start justify-between w-full -mt-0.5 mb-1">
+                    <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight flex-1 pr-1">${n.nom}</h3>
+                    <div class="flex items-center gap-1 shrink-0 -mt-1 -mr-1">
+                        <button class="btn-card-edit w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                        <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="btn-card-resolve w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 ${n.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Ocupado' : 'Asignar / Ocupar'}">
+                            <svg class="w-5 h-5 stroke-[1.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                     </div>
                 </div>
-                <div class="flex items-center gap-1 shrink-0">
-                    <button class="btn-card-edit w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    </button>
-                    <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="btn-card-resolve w-7 h-7 rounded-lg shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 ${n.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Ocupado' : 'Asignar / Ocupar'}">
-                        <svg class="w-5 h-5 stroke-[1.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+
+                <!-- FILA ÚNICA DE DATOS: SRV, UTE, TRACTOR, TERMINAL BADGE -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${srvFinal}</span>
+                    ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
+                    <span class="text-[12px] font-extrabold text-black tracking-wide">${tractorFinal}</span>
+                    ${obtenerHtmlBadgeTerminal(n)}
                 </div>
             </div>
+
             ${tieneDetalle ? `
             <div class="mt-2 bg-black/10 rounded-lg p-2.5 overflow-y-auto custom-scrollbar max-h-24">
                 <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-wrap break-words">${n.detalle}</p>
             </div>` : ''}
-            <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-black text-black uppercase mt-1">
+
+            <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-black text-black uppercase mt-2">
                 <span class="flex items-center gap-1 shrink-0">
                     <span class="text-purple-700">👤</span>
                     <span>${n.creador || n.usuario || 'USER'}</span>
@@ -295,23 +301,27 @@ function generarHtmlCard(n) {
 
     return `
     <article id="card-${n.id}" class="rounded-xl border p-4 relative transition-all duration-300 w-full flex flex-col shrink-0 ${cardClass}">
-        <div class="flex justify-between items-start mb-3">
-            <div class="flex flex-col min-w-0 pr-3">
-                <h3 class="font-extrabold ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-sm sm:text-base leading-tight uppercase truncate w-full tracking-tight">${n.nom}</h3>
-                <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${srvFinal}</span>
-                    ${uteBadge ? `<span class="border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase">${uteBadge}</span>` : ''}
-                    <span class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide">${tractorFinal}</span>
-                    ${n.fecha_objetivo ? `<span class="px-1.5 py-0.5 text-[9px] font-black ${cfg.text} whitespace-nowrap rounded border ${cfg.border}">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
+        <div class="flex flex-col w-full mb-2">
+            <!-- ROW 1: NOMBRE Y BOTONES DE ACCIÓN (MÁS ARRIBA EN LA ESQUINA SUPERIOR DERECHA) -->
+            <div class="flex items-start justify-between w-full -mt-1 mb-1">
+                <h3 class="font-extrabold ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-sm sm:text-base leading-tight uppercase truncate flex-1 pr-2 tracking-tight">${n.nom}</h3>
+                <div class="flex items-center gap-1.5 shrink-0 -mt-1 -mr-1">
+                    <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="btn-card-resolve w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500/20 text-emerald-500 cursor-default' : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Resuelto' : 'Marcar como resuelto'}">
+                        <svg class="w-3.5 h-3.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                    </button>
+                    <button class="btn-card-edit w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:text-indigo-500 dark:hover:text-indigo-400 text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-                <button ${n.resuelto ? 'disabled' : `onclick="resolver(${n.id})"`} class="btn-card-resolve w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center ${n.resuelto ? 'bg-emerald-500/20 text-emerald-500 cursor-default' : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95'}" title="${n.resuelto ? 'Resuelto' : 'Marcar como resuelto'}">
-                    <svg class="w-3.5 h-3.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-                </button>
-                <button class="btn-card-edit w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:text-indigo-500 dark:hover:text-indigo-400 text-slate-400 dark:text-slate-500 cursor-pointer active:scale-95" onclick="abrirEdicion(${n.id})" title="Editar detalle">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                </button>
+
+            <!-- FILA ÚNICA DE DATOS: SRV, UTE, TRACTOR, TERMINAL BADGE, FECHA -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${srvFinal}</span>
+                ${uteBadge ? `<span class="border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase">${uteBadge}</span>` : ''}
+                <span class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide">${tractorFinal}</span>
+                ${obtenerHtmlBadgeTerminal(n)}
+                ${n.fecha_objetivo ? `<span class="px-1.5 py-0.5 text-[9px] font-black ${cfg.text} whitespace-nowrap rounded border ${cfg.border}">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
             </div>
         </div>
 
@@ -524,9 +534,72 @@ function quitarMencion(cardId, usuario) {
     }).catch(e => console.error('Error quitando mención:', e));
 }
 
-// Close mention dropdowns when clicking outside
+// ==============================================================
+// SISTEMA DE TERMINALES EN TARJETAS
+// ==============================================================
+const CONFIG_TERMINALES_FEED = {
+    'DOCK SUD': { bg: '#DD7E6B', text: '#000000' },
+    'TLC': { bg: '#920E61', text: '#FFFFFF' },
+    'TPH': { bg: '#A4C2F4', text: '#000000' },
+    'AÑELO': { bg: '#DECBC6', text: '#000000' }
+};
+
+function obtenerHtmlBadgeTerminal(n) {
+    const term = (n.terminal || '').toUpperCase().trim();
+    if (!term || !CONFIG_TERMINALES_FEED[term]) {
+        return `
+        <div class="relative inline-block text-left">
+            <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-black/10 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-black/20 dark:hover:bg-white/20 transition-all flex items-center gap-1 cursor-pointer" title="Asignar Terminal">
+                <span>+ TERMINAL</span>
+            </button>
+            <div id="drop-terminal-card-${n.id}" class="hidden absolute left-0 top-full mt-1 z-[60] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden py-1 w-28">
+                ${Object.keys(CONFIG_TERMINALES_FEED).map(t => {
+                    const cfg = CONFIG_TERMINALES_FEED[t];
+                    return `<div onclick="cambiarTerminalCard(${n.id}, '${t}')" class="px-2.5 py-1 text-[10px] font-black uppercase cursor-pointer hover:opacity-80 transition-all flex items-center justify-between" style="background-color: ${cfg.bg}; color: ${cfg.text};"><span>${t}</span></div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    const cfg = CONFIG_TERMINALES_FEED[term];
+    return `
+    <div class="relative inline-block text-left">
+        <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-transform active:scale-95 cursor-pointer flex items-center gap-1 shadow-xs" style="background-color: ${cfg.bg}; color: ${cfg.text};" title="Cambiar Terminal">
+            <span>${term}</span>
+        </button>
+        <div id="drop-terminal-card-${n.id}" class="hidden absolute left-0 top-full mt-1 z-[60] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden py-1 w-28">
+            ${Object.keys(CONFIG_TERMINALES_FEED).map(t => {
+                const c = CONFIG_TERMINALES_FEED[t];
+                return `<div onclick="cambiarTerminalCard(${n.id}, '${t}')" class="px-2.5 py-1 text-[10px] font-black uppercase cursor-pointer hover:opacity-80 transition-all flex items-center justify-between" style="background-color: ${c.bg}; color: ${c.text};"><span>${t}</span></div>`;
+            }).join('')}
+            <div onclick="cambiarTerminalCard(${n.id}, '')" class="px-2.5 py-1 text-[9px] font-extrabold uppercase cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-500 transition-all text-center">Quitar</div>
+        </div>
+    </div>`;
+}
+
+function toggleDropdownTerminalCard(cardId, event) {
+    if (event) event.stopPropagation();
+    const drop = document.getElementById(`drop-terminal-card-${cardId}`);
+    document.querySelectorAll('[id^="drop-terminal-card-"]').forEach(d => {
+        if (d !== drop) d.classList.add('hidden');
+    });
+    if (drop) drop.classList.toggle('hidden');
+}
+
+function cambiarTerminalCard(cardId, terminal) {
+    fetch(`${API_URL}/api/novedades/terminal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_novedad: String(cardId), terminal: terminal })
+    }).catch(e => console.error('Error actualizando terminal:', e));
+}
+
+// Close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.mention-input-wrapper')) {
         document.querySelectorAll('.mention-dropdown').forEach(d => d.classList.add('hidden'));
+    }
+    if (!e.target.closest('[id^="drop-terminal-card-"]')) {
+        document.querySelectorAll('[id^="drop-terminal-card-"]').forEach(d => d.classList.add('hidden'));
     }
 });

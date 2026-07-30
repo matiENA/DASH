@@ -139,6 +139,40 @@
                         </div>
                     </div>
 
+                    <!-- 🏢 SELECCIÓN DE TERMINAL (TOGGLE BUTTON UNIQUE) -->
+                    <div id="div-terminal" class="flex flex-col gap-1.5 py-1">
+                        <input type="hidden" id="input-terminal" value="">
+                        <div class="flex items-center gap-4 flex-wrap">
+                            <label onclick="seleccionarTerminal('DOCK SUD')" class="flex items-center gap-2 cursor-pointer group select-none">
+                                <div id="radio-terminal-DOCK SUD" class="w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-600 flex items-center justify-center transition-all bg-white dark:bg-slate-900 group-hover:border-indigo-500">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-slate-100 hidden"></div>
+                                </div>
+                                <span class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">DOCK SUD</span>
+                            </label>
+
+                            <label onclick="seleccionarTerminal('TPH')" class="flex items-center gap-2 cursor-pointer group select-none">
+                                <div id="radio-terminal-TPH" class="w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-600 flex items-center justify-center transition-all bg-white dark:bg-slate-900 group-hover:border-indigo-500">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-slate-100 hidden"></div>
+                                </div>
+                                <span class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">TPH</span>
+                            </label>
+
+                            <label onclick="seleccionarTerminal('AÑELO')" class="flex items-center gap-2 cursor-pointer group select-none">
+                                <div id="radio-terminal-AÑELO" class="w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-600 flex items-center justify-center transition-all bg-white dark:bg-slate-900 group-hover:border-indigo-500">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-slate-100 hidden"></div>
+                                </div>
+                                <span class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">AÑELO</span>
+                            </label>
+
+                            <label onclick="seleccionarTerminal('TLC')" class="flex items-center gap-2 cursor-pointer group select-none">
+                                <div id="radio-terminal-TLC" class="w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-600 flex items-center justify-center transition-all bg-white dark:bg-slate-900 group-hover:border-indigo-500">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-slate-100 hidden"></div>
+                                </div>
+                                <span class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">TLC</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- 📅 CALENDARIO DESPLEGADO (DEPLOYED CALENDAR) -->
                     <div id="div-fecha" class="flex flex-col gap-1.5">
                         <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Fecha Objetivo / Vencimiento</label>
