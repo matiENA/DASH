@@ -29,6 +29,8 @@ function obtenerListaFlotaArray() {
     return [];
 }
 
+let dropEjecutado = false;
+
 function normalizarServicio(srv) {
     if (!srv) return 'S/A';
     let clean = String(srv).toUpperCase().trim();
@@ -39,6 +41,7 @@ function normalizarServicio(srv) {
 
 function iniciarDragCard(e, cardId) {
     cardSeleccionadaId = cardId;
+    dropEjecutado = false;
     if (e && e.dataTransfer) {
         e.dataTransfer.setData('text/plain', String(cardId));
         e.dataTransfer.effectAllowed = 'move';
@@ -46,15 +49,11 @@ function iniciarDragCard(e, cardId) {
     mostrarServiceOverlay(cardId);
 }
 
-function finalizarDragCard(e) {
-    setTimeout(() => {
-        ocultarServiceOverlay();
-    }, 150);
-}
-
 function permitirDrop(e) {
-    e.preventDefault();
-    if (e && e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    if (e) {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    }
 }
 
 function destacarDropZone(element) {
@@ -70,12 +69,24 @@ function desmarcarDropZone(element) {
 }
 
 function ejecutarDropServicio(e, servicio) {
-    e.preventDefault();
-    const cardId = (e && e.dataTransfer ? e.dataTransfer.getData('text/plain') : null) || cardSeleccionadaId;
+    if (e) {
+        e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    dropEjecutado = true;
+    const cardId = cardSeleccionadaId || (e && e.dataTransfer ? e.dataTransfer.getData('text/plain') : null);
     ocultarServiceOverlay();
     if (cardId) {
         resolver(cardId, servicio);
     }
+}
+
+function cancelarDropZone(e) {
+    if (e) {
+        e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    ocultarServiceOverlay();
 }
 
 function mostrarServiceOverlay(cardId) {
@@ -355,7 +366,7 @@ function generarHtmlCard(n) {
         let tieneDetalle = n.detalle && n.detalle.trim().length > 0;
         let cardHeight = tieneDetalle ? 'min-h-[90px] py-3' : 'min-h-[85px] py-2.5';
         return `
-        <article id="card-${n.id}" draggable="true" ondragstart="iniciarDragCard(event, ${n.id})" ondragend="finalizarDragCard(event)" class="rounded-xl p-3 relative transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 cursor-grab active:cursor-grabbing ${cardHeight}">
+        <article id="card-${n.id}" draggable="true" ondragstart="iniciarDragCard(event, ${n.id})" class="rounded-xl p-3 relative transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 cursor-grab active:cursor-grabbing ${cardHeight}">
             <div class="card-inner-content flex flex-col w-full transition-opacity duration-200">
                 <!-- ROW 1: NOMBRE Y BOTONES DE ACCIÓN (ESQUINA SUPERIOR DERECHA) -->
                 <div class="flex items-start justify-between w-full -mt-0.5 mb-1">
@@ -370,12 +381,12 @@ function generarHtmlCard(n) {
                     </div>
                 </div>
 
-                <!-- FILA ÚNICA DE DATOS: UTE, TRACTOR, TERMINAL BADGE, SERVICIO BADGE -->
+                <!-- FILA ÚNICA DE DATOS: SRV (READ-ONLY), UTE, TRACTOR, TERMINAL BADGE -->
                 <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${srvFinal}</span>
                     ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
                     <span class="text-[12px] font-extrabold text-black tracking-wide">${tractorFinal}</span>
                     ${obtenerHtmlButtonTerminal(n)}
-                    ${obtenerHtmlButtonServicio(n)}
                 </div>
 
                 ${tieneDetalle ? `
@@ -397,9 +408,8 @@ function generarHtmlCard(n) {
                 </div>
             </div>
 
-            <!-- DESPLEGABLES FUERA DE card-inner-content (MANTIENEN 100% OPACIDAD VIBRANTE) -->
-            ${obtenerHtmlDropdownTerminal(n)}
-            ${obtenerHtmlDropdownServicio(n)}
+            <!-- DESPLEGABLE FUERA DE card-inner-content (MANTIENE 100% OPACIDAD VIBRANTE) -->
+            ${obtenerHtmlButtonTerminal(n) ? obtenerHtmlDropdownTerminal(n) : ''}
         </article>`;
     }
 

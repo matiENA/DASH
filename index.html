@@ -67,8 +67,8 @@
     </button>
 
     <!-- OVERLAY SELECCIÓN / DROP ZONE DE SERVICIO AL ARRASTRAR (MET, CM, EURO, LIVIANO, PP, TDS) -->
-    <div id="service-drop-overlay" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[90] hidden flex-col justify-center items-center p-6 md:p-12 pointer-events-auto transition-all duration-200">
-        <div class="w-full max-w-4xl grid grid-cols-2 md:grid-cols-3 gap-6 my-auto">
+    <div id="service-drop-overlay" ondragover="permitirDrop(event)" ondrop="cancelarDropZone(event)" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[90] hidden flex-col justify-center items-center p-6 md:p-12 pointer-events-auto transition-all duration-200">
+        <div class="w-full max-w-4xl grid grid-cols-2 md:grid-cols-3 gap-6 my-auto" ondragover="permitirDrop(event)">
             <div ondragover="permitirDrop(event)" ondragenter="destacarDropZone(this)" ondragleave="desmarcarDropZone(this)" ondrop="ejecutarDropServicio(event, 'CM')" class="service-drop-zone border-2 border-dashed border-slate-500/70 rounded-3xl p-8 md:p-12 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/20 hover:scale-105 shadow-xl group">
                 <span class="text-3xl md:text-5xl font-black tracking-widest text-white group-hover:text-cyan-300 transition-colors">CM</span>
             </div>
