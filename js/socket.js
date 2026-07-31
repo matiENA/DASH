@@ -1,42 +1,64 @@
 // Inicializar la conexión de Socket.IO
 const socket = io(API_URL);
 
-// Escucha inicial y carga de datos locales
-socket.on('connect', () => {
-    console.log("⚡ Conectado al servidor de novedades.");
-    // Fetch inicial de la flota desde la API principal para tener datos de autocompletado de inmediato
+function cargarDatosIniciales(intentos = 0) {
     fetch(`${API_URL}/api/datos`)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+            return res.json();
+        })
         .then(data => {
             if (data && data.diagramas && data.diagramas.diagramas) {
                 RAM_Flota = data.diagramas.diagramas;
                 if (data.usuarios) RAM_Usuarios = data.usuarios;
             }
         })
-        .catch(e => console.error("Error al obtener datos iniciales de la flota:", e));
+        .catch(e => {
+            console.warn(`[Socket] Intento ${intentos + 1}: al obtener /api/datos (${e.message}). Reintentando en 3s...`);
+            if (intentos < 10) {
+                setTimeout(() => cargarDatosIniciales(intentos + 1), 3000);
+            }
+        });
+}
+
+function cargarNovedadesIniciales(intentos = 0) {
+    fetch(`${API_URL}/api/novedades`)
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+            return res.json();
+        })
+        .then(data => { 
+            if(data && data.success) { 
+                RAM_Novedades = data.data; 
+                if (typeof renderizar === 'function') renderizar(); 
+            } 
+        })
+        .catch(e => {
+            console.warn(`[Socket] Intento ${intentos + 1}: al obtener /api/novedades (${e.message}). Reintentando en 3s...`);
+            if (intentos < 10) {
+                setTimeout(() => cargarNovedadesIniciales(intentos + 1), 3000);
+            }
+        });
+}
+
+// Escucha inicial y carga de datos locales
+socket.on('connect', () => {
+    console.log("⚡ Conectado al servidor de novedades.");
+    cargarDatosIniciales();
 });
 
-// Carga inicial de novedades existentes
-fetch(`${API_URL}/api/novedades`)
-    .then(res => res.json())
-    .then(data => { 
-        if(data.success) { 
-            RAM_Novedades = data.data; 
-            renderizar(); 
-        } 
-    })
-    .catch(e => console.error("Error al obtener novedades iniciales:", e));
+cargarNovedadesIniciales();
 
 // Escuchadores de eventos de actualización en tiempo real
 socket.on('datos_actualizados', (data) => { 
     if(data && data.diagramas) {
         RAM_Flota = data.diagramas;
         if (data.usuarios) RAM_Usuarios = data.usuarios;
-        renderizar(); // 🔄 Auto-actualiza las tarjetas en vivo con los nuevos n_ute, tractor y servicio de la RAM
+        if (typeof renderizar === 'function') renderizar();
     }
 });
 
 socket.on('novedades_actualizadas', (data) => { 
     RAM_Novedades = data; 
-    renderizar(); 
+    if (typeof renderizar === 'function') renderizar(); 
 });

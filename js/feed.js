@@ -1,6 +1,19 @@
 let autoScrollIntervals = [];
 let cardSeleccionadaId = null;
 
+function cambiarVista(vista) {
+    vistaActual = vista;
+    const tabIds = ['btn-todas', 'btn-archivo', 'btn-mis_novedades', 'btn-menciones'];
+    const activeClass = 'flex-1 px-4 py-1.5 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 text-center whitespace-nowrap';
+    const inactiveClass = 'flex-1 px-4 py-1.5 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 text-center whitespace-nowrap';
+    
+    tabIds.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.className = (id === 'btn-' + vista) ? activeClass : inactiveClass;
+    });
+    renderizar();
+}
+
 function obtenerListaFlotaArray() {
     if (!RAM_Flota) return [];
     if (Array.isArray(RAM_Flota)) return RAM_Flota;
