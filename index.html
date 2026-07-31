@@ -66,6 +66,31 @@
         <svg class="w-6 h-6 transform group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
     </button>
 
+    <!-- OVERLAY SELECCIÓN / DROP ZONE DE SERVICIO AL ARRASTRAR (MET, CM, EURO, LIVIANO, PP, TDS) -->
+    <div id="service-drop-overlay" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[90] hidden flex-col justify-center items-center p-6 md:p-12 pointer-events-auto transition-all duration-200">
+        <div class="w-full max-w-4xl grid grid-cols-2 md:grid-cols-3 gap-6 my-auto">
+            <div ondragover="permitirDrop(event)" ondragenter="destacarDropZone(this)" ondragleave="desmarcarDropZone(this)" ondrop="ejecutarDropServicio(event, 'CM')" class="service-drop-zone border-2 border-dashed border-slate-500/70 rounded-3xl p-8 md:p-12 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/20 hover:scale-105 shadow-xl group">
+                <span class="text-3xl md:text-5xl font-black tracking-widest text-white group-hover:text-cyan-300 transition-colors">CM</span>
+            </div>
+            <div ondragover="permitirDrop(event)" ondragenter="destacarDropZone(this)" ondragleave="desmarcarDropZone(this)" ondrop="ejecutarDropServicio(event, 'EURO')" class="service-drop-zone border-2 border-dashed border-slate-500/70 rounded-3xl p-8 md:p-12 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/20 hover:scale-105 shadow-xl group">
+                <span class="text-3xl md:text-5xl font-black tracking-widest text-white group-hover:text-cyan-300 transition-colors">EURO</span>
+            </div>
+            <div ondragover="permitirDrop(event)" ondragenter="destacarDropZone(this)" ondragleave="desmarcarDropZone(this)" ondrop="ejecutarDropServicio(event, 'MET')" class="service-drop-zone border-2 border-dashed border-slate-500/70 rounded-3xl p-8 md:p-12 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/20 hover:scale-105 shadow-xl group">
+                <span class="text-3xl md:text-5xl font-black tracking-widest text-white group-hover:text-cyan-300 transition-colors">MET</span>
+            </div>
+            <div ondragover="permitirDrop(event)" ondragenter="destacarDropZone(this)" ondragleave="desmarcarDropZone(this)" ondrop="ejecutarDropServicio(event, 'LIVIANO')" class="service-drop-zone border-2 border-dashed border-slate-500/70 rounded-3xl p-8 md:p-12 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/20 hover:scale-105 shadow-xl group">
+                <span class="text-3xl md:text-5xl font-black tracking-widest text-white group-hover:text-cyan-300 transition-colors">LIVIANO</span>
+            </div>
+            <div ondragover="permitirDrop(event)" ondragenter="destacarDropZone(this)" ondragleave="desmarcarDropZone(this)" ondrop="ejecutarDropServicio(event, 'PP')" class="service-drop-zone border-2 border-dashed border-slate-500/70 rounded-3xl p-8 md:p-12 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/20 hover:scale-105 shadow-xl group">
+                <span class="text-3xl md:text-5xl font-black tracking-widest text-white group-hover:text-cyan-300 transition-colors">PP</span>
+            </div>
+            <div ondragover="permitirDrop(event)" ondragenter="destacarDropZone(this)" ondragleave="desmarcarDropZone(this)" ondrop="ejecutarDropServicio(event, 'TDS')" class="service-drop-zone border-2 border-dashed border-slate-500/70 rounded-3xl p-8 md:p-12 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/20 hover:scale-105 shadow-xl group">
+                <span class="text-3xl md:text-5xl font-black tracking-widest text-white group-hover:text-cyan-300 transition-colors">TDS</span>
+            </div>
+        </div>
+        <button onclick="ocultarServiceOverlay()" class="mt-6 px-6 py-2.5 rounded-2xl bg-slate-800 text-slate-300 hover:bg-rose-600 hover:text-white font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-md">Cancelar</button>
+    </div>
+
     <!-- MODAL REPORTAR NOVEDAD (DOBLE INSTANCIA + CALENDARIO DESPLEGADO) -->
     <div id="modal-nueva" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[100] hidden flex flex-col justify-end transition-opacity opacity-0 duration-200">
         <div class="bg-white dark:bg-slate-900 w-full md:w-[500px] md:mx-auto md:mb-6 rounded-t-3xl md:rounded-3xl shadow-2xl transform translate-y-full transition-transform duration-250 ease-out max-h-[90vh] flex flex-col border border-slate-200/80 dark:border-slate-800/80 overflow-hidden" id="modal-content">

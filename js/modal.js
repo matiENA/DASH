@@ -289,27 +289,28 @@ function filtrarChoferes(origen = 'nom') {
     const otherDrop = isTractor ? dropNom : dropTractor;
     
     if (otherDrop) otherDrop.classList.add('hidden');
-    if (!drop) return;
+    if (!drop || !input) return;
 
     const val = input.value.toLowerCase().trim();
+    const lista = (typeof obtenerListaFlotaArray === 'function') ? obtenerListaFlotaArray() : (Array.isArray(RAM_Flota) ? RAM_Flota : []);
 
-    let filtrados = RAM_Flota;
+    let filtrados = lista;
     if (val.length > 0) {
-        filtrados = RAM_Flota.filter(c => 
-            c.nom.toLowerCase().includes(val) || 
+        filtrados = lista.filter(c => 
+            (c.nom && c.nom.toLowerCase().includes(val)) || 
             (c.tractor && c.tractor.toLowerCase().includes(val))
         );
     }
 
-    if (filtrados.length === 0) {
+    if (!Array.isArray(filtrados) || filtrados.length === 0) {
         drop.classList.add('hidden');
         return;
     }
 
     let html = '';
-    filtrados.forEach(c => {
+    filtrados.slice(0, 30).forEach(c => {
         html += `
-        <div onclick="seleccionarAutocompletado('${c.nom.replace(/'/g, "\\'")}', '${c.tractor || ''}', '${c.srv || 'S/A'}', '${c.n_ute || ''}')" class="p-3 border-b border-slate-100 dark:border-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-800/80 cursor-pointer transition-colors flex justify-between items-center">
+        <div onclick="seleccionarAutocompletado('${(c.nom || '').replace(/'/g, "\\'")}', '${c.tractor || ''}', '${c.srv || 'S/A'}', '${c.n_ute || ''}')" class="p-3 border-b border-slate-100 dark:border-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-800/80 cursor-pointer transition-colors flex justify-between items-center">
             <div class="flex flex-col truncate pr-2">
                 <span class="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate">${c.nom}</span>
                 <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">UTE: ${c.n_ute || '-'}</span>

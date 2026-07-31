@@ -1,16 +1,99 @@
 let autoScrollIntervals = [];
+let cardSeleccionadaId = null;
 
-function cambiarVista(vista) {
-    vistaActual = vista;
-    const tabIds = ['btn-todas', 'btn-archivo', 'btn-mis_novedades', 'btn-menciones'];
-    const activeClass = 'flex-1 px-4 py-1.5 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 text-center whitespace-nowrap';
-    const inactiveClass = 'flex-1 px-4 py-1.5 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 text-center whitespace-nowrap';
-    
-    tabIds.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.className = (id === 'btn-' + vista) ? activeClass : inactiveClass;
-    });
-    renderizar();
+function obtenerListaFlotaArray() {
+    if (!RAM_Flota) return [];
+    if (Array.isArray(RAM_Flota)) return RAM_Flota;
+    if (RAM_Flota.flota && typeof RAM_Flota.flota === 'object') {
+        return Object.keys(RAM_Flota.flota).map(k => {
+            const item = RAM_Flota.flota[k];
+            return {
+                nom: item.nom || item.nombre || k,
+                tractor: item.tractor || '',
+                srv: item.servicio || item.srv || 'S/A',
+                n_ute: item.n_ute || ''
+            };
+        });
+    }
+    if (typeof RAM_Flota === 'object') {
+        return Object.keys(RAM_Flota).map(k => {
+            const item = RAM_Flota[k];
+            return {
+                nom: item.nom || item.nombre || k,
+                tractor: item.tractor || '',
+                srv: item.servicio || item.srv || 'S/A',
+                n_ute: item.n_ute || ''
+            };
+        });
+    }
+    return [];
+}
+
+function normalizarServicio(srv) {
+    if (!srv) return 'S/A';
+    let clean = String(srv).toUpperCase().trim();
+    if (clean === 'LIV.' || clean === 'LIV') return 'LIVIANO';
+    if (clean === 'MET') return 'METANOL';
+    return clean;
+}
+
+function iniciarDragCard(e, cardId) {
+    cardSeleccionadaId = cardId;
+    if (e && e.dataTransfer) {
+        e.dataTransfer.setData('text/plain', String(cardId));
+        e.dataTransfer.effectAllowed = 'move';
+    }
+    mostrarServiceOverlay(cardId);
+}
+
+function finalizarDragCard(e) {
+    setTimeout(() => {
+        ocultarServiceOverlay();
+    }, 150);
+}
+
+function permitirDrop(e) {
+    e.preventDefault();
+    if (e && e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+}
+
+function destacarDropZone(element) {
+    if (!element) return;
+    element.classList.add('border-cyan-400', 'bg-cyan-500/25', 'scale-105', 'shadow-2xl', 'shadow-cyan-500/40');
+    element.classList.remove('border-slate-500/70');
+}
+
+function desmarcarDropZone(element) {
+    if (!element) return;
+    element.classList.remove('border-cyan-400', 'bg-cyan-500/25', 'scale-105', 'shadow-2xl', 'shadow-cyan-500/40');
+    element.classList.add('border-slate-500/70');
+}
+
+function ejecutarDropServicio(e, servicio) {
+    e.preventDefault();
+    const cardId = (e && e.dataTransfer ? e.dataTransfer.getData('text/plain') : null) || cardSeleccionadaId;
+    ocultarServiceOverlay();
+    if (cardId) {
+        resolver(cardId, servicio);
+    }
+}
+
+function mostrarServiceOverlay(cardId) {
+    cardSeleccionadaId = cardId;
+    const overlay = document.getElementById('service-drop-overlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+}
+
+function ocultarServiceOverlay() {
+    const overlay = document.getElementById('service-drop-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+    }
+    document.querySelectorAll('.service-drop-zone').forEach(z => desmarcarDropZone(z));
 }
 
 function esMenorA24Horas(isoStr) {
@@ -48,36 +131,32 @@ function renderizar() {
 
     // VISTA: MIS NOVEDADES (creadas por el usuario actual)
     if (vistaActual === 'mis_novedades') {
-        const misNov = RAM_Novedades.filter(n => !n.resuelto && String(n.creador || '').toUpperCase() === usuarioActual).sort((a, b) => b.id - a.id);
-        if (misNov.length === 0) {
-            container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><span class="font-extrabold tracking-widest uppercase text-xs">No tenés novedades propias pendientes</span></div>`;
+        const misNovs = activas.filter(n => (n.usuario && n.usuario.toUpperCase() === usuarioActual) || (n.creador && n.creador.toUpperCase() === usuarioActual));
+        if (misNovs.length === 0) {
+            container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-14 h-14 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg><span class="font-extrabold tracking-widest uppercase text-xs">No has creado novedades activas</span></div>`;
             return;
         }
         const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
-        let html = `<div class="${gridClass}">`;
-        misNov.forEach(n => { html += generarHtmlCard(n); });
-        html += `</div>`;
-        container.innerHTML = html;
+        let htmlMis = `<div class="${gridClass}">`;
+        misNovs.forEach(n => { htmlMis += generarHtmlCard(n); });
+        htmlMis += `</div>`;
+        container.innerHTML = htmlMis;
         return;
     }
 
-    // VISTA: MENCIONES (novedades donde el usuario actual está mencionado)
+    // VISTA: MENCIONES (donde me etiquetaron)
     if (vistaActual === 'menciones') {
-        const mencionadas = RAM_Novedades.filter(n => !n.resuelto && Array.isArray(n.menciones) && n.menciones.includes(usuarioActual)).sort((a, b) => b.id - a.id);
-        if (mencionadas.length === 0) {
-            container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><span class="font-extrabold tracking-widest uppercase text-xs">No te mencionaron en ninguna novedad</span></div>`;
+        const mencionesNovs = activas.filter(n => Array.isArray(n.menciones) && n.menciones.some(m => m.toUpperCase() === usuarioActual));
+        if (mencionesNovs.length === 0) {
+            container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-14 h-14 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg><span class="font-extrabold tracking-widest uppercase text-xs">No tienes menciones pendientes</span></div>`;
             return;
         }
         const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
-        let html = `<div class="${gridClass}">`;
-        mencionadas.forEach(n => { html += generarHtmlCard(n); });
-        html += `</div>`;
-        container.innerHTML = html;
+        let htmlMenciones = `<div class="${gridClass}">`;
+        mencionesNovs.forEach(n => { htmlMenciones += generarHtmlCard(n); });
+        htmlMenciones += `</div>`;
+        container.innerHTML = htmlMenciones;
         return;
-    }
-
-    if (activas.length === 0 && resueltasTodas.length === 0) { // Sólo si no hay NINGUNA novedad, aunque siembre habrá LIBRES porque forzaremos el render
-        // Se maneja abajo
     }
 
     const categorias = {
@@ -103,6 +182,7 @@ function renderizar() {
     // RENDERIZAR LIBRES PRIMERO (HORIZONTAL TOP)
     let carouselIdLibres = `carrusel-cat-libres`;
     idsCarruseles.push(carouselIdLibres);
+
     htmlFinal += `
     <section class="w-full mb-8">
         <div class="flex items-center gap-4 w-full">
@@ -275,7 +355,7 @@ function generarHtmlCard(n) {
         let tieneDetalle = n.detalle && n.detalle.trim().length > 0;
         let cardHeight = tieneDetalle ? 'min-h-[90px] py-3' : 'min-h-[85px] py-2.5';
         return `
-        <article id="card-${n.id}" class="rounded-xl p-3 relative transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 ${cardHeight}">
+        <article id="card-${n.id}" draggable="true" ondragstart="iniciarDragCard(event, ${n.id})" ondragend="finalizarDragCard(event)" class="rounded-xl p-3 relative transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 cursor-grab active:cursor-grabbing ${cardHeight}">
             <div class="card-inner-content flex flex-col w-full transition-opacity duration-200">
                 <!-- ROW 1: NOMBRE Y BOTONES DE ACCIÓN (ESQUINA SUPERIOR DERECHA) -->
                 <div class="flex items-start justify-between w-full -mt-0.5 mb-1">
@@ -290,12 +370,12 @@ function generarHtmlCard(n) {
                     </div>
                 </div>
 
-                <!-- FILA ÚNICA DE DATOS: SRV, UTE, TRACTOR, TERMINAL BADGE -->
+                <!-- FILA ÚNICA DE DATOS: UTE, TRACTOR, TERMINAL BADGE, SERVICIO BADGE -->
                 <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${srvFinal}</span>
                     ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
                     <span class="text-[12px] font-extrabold text-black tracking-wide">${tractorFinal}</span>
                     ${obtenerHtmlButtonTerminal(n)}
+                    ${obtenerHtmlButtonServicio(n)}
                 </div>
 
                 ${tieneDetalle ? `
@@ -317,8 +397,9 @@ function generarHtmlCard(n) {
                 </div>
             </div>
 
-            <!-- DESPLEGABLE FUERA DE card-inner-content (MANTIENE 100% OPACIDAD VIBRANTE) -->
+            <!-- DESPLEGABLES FUERA DE card-inner-content (MANTIENEN 100% OPACIDAD VIBRANTE) -->
             ${obtenerHtmlDropdownTerminal(n)}
+            ${obtenerHtmlDropdownServicio(n)}
         </article>`;
     }
 
@@ -379,9 +460,12 @@ function generarHtmlCard(n) {
     </article>`;
 }
 
-function resolver(id) {
+function resolver(id, nuevoServicio = null) {
     if (vistaActual === 'archivo') return;
     
+    let nov = (RAM_Novedades || []).find(n => String(n.id) === String(id));
+    const srvFinal = nuevoServicio ? normalizarServicio(nuevoServicio) : (nov ? (nov.srv || 'S/A') : 'S/A');
+
     const card = document.getElementById(`card-${id}`);
     if (card) {
         card.classList.add('fade-out');
@@ -390,6 +474,10 @@ function resolver(id) {
             let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
             if (idx > -1) {
                 RAM_Novedades[idx].resuelto = true;
+                if (nuevoServicio) {
+                    RAM_Novedades[idx].srv = srvFinal;
+                    RAM_Novedades[idx].servicio = srvFinal;
+                }
                 RAM_Novedades[idx].fecha_resolucion = new Date().toISOString();
             }
             renderizar();
@@ -398,15 +486,33 @@ function resolver(id) {
         let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
         if (idx > -1) {
             RAM_Novedades[idx].resuelto = true;
+            if (nuevoServicio) {
+                RAM_Novedades[idx].srv = srvFinal;
+                RAM_Novedades[idx].servicio = srvFinal;
+            }
             RAM_Novedades[idx].fecha_resolucion = new Date().toISOString();
         }
         renderizar();
     }
 
+    const payload = {
+        nom: nov ? nov.nom : '',
+        tractor: nov ? nov.tractor : '',
+        srv: srvFinal,
+        servicio: srvFinal,
+        n_ute: nov ? nov.n_ute : 'S/D',
+        tipo_novedad: nov ? nov.tipo_novedad : 'LIBRES',
+        terminal: nov ? nov.terminal : '',
+        fecha_objetivo: nov ? nov.fecha_objetivo : '',
+        detalle: nov ? nov.detalle : '',
+        creador: nov ? (nov.creador || nov.usuario) : 'Anónimo',
+        menciones: nov ? nov.menciones : []
+    };
+
     fetch(`${API_URL}/api/novedades/actualizar`, { 
         method: 'POST', 
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: 'resolver', id_novedad: id }) 
+        body: JSON.stringify({ action: 'resolver', id_novedad: id, payload: payload }) 
     }).catch(e => console.error("Error al persistir resolución:", e));
 }
 
@@ -437,23 +543,25 @@ function filtrarQuickChoferes() {
     if (!drop || !input) return;
 
     const val = input.value.toLowerCase().trim();
-    let filtrados = RAM_Flota;
+    const lista = obtenerListaFlotaArray();
+
+    let filtrados = lista;
     if (val.length > 0) {
-        filtrados = RAM_Flota.filter(c => 
-            c.nom.toLowerCase().includes(val) || 
+        filtrados = lista.filter(c => 
+            (c.nom && c.nom.toLowerCase().includes(val)) || 
             (c.tractor && c.tractor.toLowerCase().includes(val))
         );
     }
 
-    if (filtrados.length === 0) {
+    if (!Array.isArray(filtrados) || filtrados.length === 0) {
         drop.innerHTML = '<div class="p-3 text-xs text-center text-slate-400 font-bold uppercase">No hay resultados</div>';
         return;
     }
 
     let html = '';
-    filtrados.forEach(c => {
+    filtrados.slice(0, 30).forEach(c => {
         html += `
-        <div onclick="submitQuickLibre('${c.nom.replace(/'/g, "\\'")}', '${c.tractor || ''}', '${c.srv || 'S/A'}', '${c.n_ute || ''}')" class="p-3 border-b border-slate-100 dark:border-slate-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 cursor-pointer transition-colors flex justify-between items-center text-left">
+        <div onclick="submitQuickLibre('${(c.nom || '').replace(/'/g, "\\'")}', '${c.tractor || ''}', '${c.srv || 'S/A'}', '${c.n_ute || ''}')" class="p-3 border-b border-slate-100 dark:border-slate-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 cursor-pointer transition-colors flex justify-between items-center text-left">
             <div class="flex flex-col truncate pr-2">
                 <span class="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate">${c.nom}</span>
             </div>
@@ -640,7 +748,7 @@ function toggleDropdownTerminalCard(cardId, event) {
 }
 
 function cerrarTodosTerminalDropdowns() {
-    document.querySelectorAll('[id^="drop-terminal-card-"]').forEach(d => d.classList.add('hidden'));
+    document.querySelectorAll('[id^="drop-terminal-card-"], [id^="drop-servicio-card-"]').forEach(d => d.classList.add('hidden'));
     document.querySelectorAll('.card-dimmed').forEach(c => {
         c.classList.remove('card-dimmed');
         const inner = c.querySelector('.card-inner-content');
@@ -663,6 +771,7 @@ function cambiarTerminalCard(cardId, terminal, event) {
         nom: nov.nom || '',
         tractor: nov.tractor || '',
         srv: nov.srv || 'S/A',
+        servicio: nov.servicio || nov.srv || 'S/A',
         n_ute: nov.n_ute || 'S/D',
         tipo_novedad: nov.tipo_novedad || 'LIBRES',
         terminal: terminal,
@@ -679,12 +788,125 @@ function cambiarTerminalCard(cardId, terminal, event) {
     }).catch(e => console.error('Error actualizando terminal:', e));
 }
 
+// ==============================================================
+// SISTEMA DE SERVICIOS EN TARJETAS (JSON Y SHEETS)
+// ==============================================================
+const CONFIG_SERVICIOS_FEED = {
+    'TDS': { bg: '#10B981', text: '#FFFFFF' },
+    'CM': { bg: '#3B82F6', text: '#FFFFFF' },
+    'PP': { bg: '#8B5CF6', text: '#FFFFFF' },
+    'EURO': { bg: '#F59E0B', text: '#FFFFFF' },
+    'MET': { bg: '#EC4899', text: '#FFFFFF' },
+    'LIV.': { bg: '#06B6D4', text: '#FFFFFF' },
+    'LIVIANO': { bg: '#06B6D4', text: '#FFFFFF' }
+};
+
+function obtenerHtmlButtonServicio(n) {
+    const srvRaw = (n.srv || n.servicio || '').toUpperCase().trim();
+    let srvDisplay = srvRaw;
+    if (srvRaw === 'LIVIANO') srvDisplay = 'LIV.';
+    const cfg = CONFIG_SERVICIOS_FEED[srvRaw] || CONFIG_SERVICIOS_FEED[srvDisplay];
+
+    if (!srvRaw || srvRaw === 'S/A' || !cfg) {
+        return `
+        <button type="button" onclick="toggleDropdownServicioCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-black text-white hover:bg-black/80 transition-all flex items-center gap-1 cursor-pointer" title="Asignar Servicio">
+            <span>+ SERVICIO</span>
+        </button>`;
+    }
+
+    return `
+    <button type="button" onclick="toggleDropdownServicioCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-transform active:scale-95 cursor-pointer flex items-center gap-1 shadow-xs" style="background-color: ${cfg.bg}; color: ${cfg.text};" title="Cambiar Servicio">
+        <span>${srvDisplay}</span>
+    </button>`;
+}
+
+function obtenerHtmlDropdownServicio(n) {
+    const srvRaw = (n.srv || n.servicio || '').toUpperCase().trim();
+    const opciones = ['TDS', 'CM', 'PP', 'EURO', 'MET', 'LIV.'];
+    return `
+    <div id="drop-servicio-card-${n.id}" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-1 items-end py-0.5 select-none pointer-events-auto opacity-100">
+        ${opciones.map(t => {
+            const c = CONFIG_SERVICIOS_FEED[t];
+            return `<div onclick="cambiarServicioCard(${n.id}, '${t}', event)" class="px-3 py-0.5 rounded-lg text-[9px] font-black uppercase cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-md flex items-center justify-center tracking-wide opacity-100" style="background-color: ${c.bg}; color: ${c.text}; min-width: 85px;">${t}</div>`;
+        }).join('')}
+        ${(srvRaw && srvRaw !== 'S/A') ? `<div onclick="cambiarServicioCard(${n.id}, 'S/A', event)" class="px-2.5 py-0.5 rounded-lg text-[8px] font-black uppercase cursor-pointer bg-slate-900 text-white hover:bg-rose-600 transition-all shadow-md border border-white/20 opacity-100">✕ Quitar</div>` : ''}
+    </div>`;
+}
+
+function toggleDropdownServicioCard(cardId, event) {
+    if (event) event.stopPropagation();
+    const drop = document.getElementById(`drop-servicio-card-${cardId}`);
+    const card = document.getElementById(`card-${cardId}`);
+
+    document.querySelectorAll('[id^="drop-terminal-card-"], [id^="drop-servicio-card-"]').forEach(d => {
+        if (d !== drop) d.classList.add('hidden');
+    });
+    document.querySelectorAll('.card-dimmed').forEach(c => {
+        if (c !== card) {
+            c.classList.remove('card-dimmed');
+            const inner = c.querySelector('.card-inner-content');
+            if (inner) inner.classList.remove('opacity-30');
+        }
+    });
+
+    if (drop) {
+        const isOpening = drop.classList.contains('hidden');
+        drop.classList.toggle('hidden');
+        if (card) {
+            const inner = card.querySelector('.card-inner-content');
+            if (isOpening) {
+                card.classList.add('card-dimmed');
+                if (inner) inner.classList.add('opacity-30');
+            } else {
+                card.classList.remove('card-dimmed');
+                if (inner) inner.classList.remove('opacity-30');
+            }
+        }
+    }
+}
+
+function cambiarServicioCard(cardId, servicio, event) {
+    if (event) event.stopPropagation();
+    cerrarTodosTerminalDropdowns();
+
+    const nov = (RAM_Novedades || []).find(x => String(x.id) === String(cardId));
+    if (!nov) return;
+
+    let srvClean = servicio.toUpperCase();
+    if (srvClean === 'LIV.' || srvClean === 'LIV') srvClean = 'LIVIANO';
+
+    // Actualización optimista en RAM local y re-render inmediato
+    nov.srv = srvClean;
+    nov.servicio = srvClean;
+    if (typeof renderizar === 'function') renderizar();
+
+    const payload = {
+        nom: nov.nom || '',
+        tractor: nov.tractor || '',
+        srv: srvClean,
+        servicio: srvClean,
+        n_ute: nov.n_ute || 'S/D',
+        tipo_novedad: nov.tipo_novedad || 'LIBRES',
+        terminal: nov.terminal || '',
+        fecha_objetivo: nov.fecha_objetivo || '',
+        detalle: nov.detalle || '',
+        creador: nov.creador || nov.usuario || 'Anónimo',
+        menciones: nov.menciones || []
+    };
+
+    fetch(`${API_URL}/api/novedades/actualizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'editar', id_novedad: String(cardId), payload: payload })
+    }).catch(e => console.error('Error actualizando servicio:', e));
+}
+
 // Close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.mention-input-wrapper')) {
         document.querySelectorAll('.mention-dropdown').forEach(d => d.classList.add('hidden'));
     }
-    if (!e.target.closest('[id^="drop-terminal-card-"]') && !e.target.closest('button[onclick*="toggleDropdownTerminalCard"]')) {
+    if (!e.target.closest('[id^="drop-terminal-card-"]') && !e.target.closest('[id^="drop-servicio-card-"]') && !e.target.closest('button[onclick*="toggleDropdownTerminalCard"]') && !e.target.closest('button[onclick*="toggleDropdownServicioCard"]')) {
         cerrarTodosTerminalDropdowns();
     }
 });
