@@ -46,7 +46,17 @@ function iniciarDragCard(e, cardId) {
         e.dataTransfer.setData('text/plain', String(cardId));
         e.dataTransfer.effectAllowed = 'move';
     }
-    mostrarServiceOverlay(cardId);
+    setTimeout(() => {
+        mostrarServiceOverlay(cardId);
+    }, 20);
+}
+
+function finalizarDragCard(e) {
+    setTimeout(() => {
+        if (!dropEjecutado) {
+            ocultarServiceOverlay();
+        }
+    }, 100);
 }
 
 function permitirDrop(e) {
@@ -366,7 +376,7 @@ function generarHtmlCard(n) {
         let tieneDetalle = n.detalle && n.detalle.trim().length > 0;
         let cardHeight = tieneDetalle ? 'min-h-[90px] py-3' : 'min-h-[85px] py-2.5';
         return `
-        <article id="card-${n.id}" draggable="true" ondragstart="iniciarDragCard(event, ${n.id})" class="rounded-xl p-3 relative transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 cursor-grab active:cursor-grabbing ${cardHeight}">
+        <article id="card-${n.id}" draggable="true" ondragstart="iniciarDragCard(event, ${n.id})" ondragend="finalizarDragCard(event)" class="rounded-xl p-3 relative transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 cursor-grab active:cursor-grabbing ${cardHeight}">
             <div class="card-inner-content flex flex-col w-full transition-opacity duration-200">
                 <!-- ROW 1: NOMBRE Y BOTONES DE ACCIÓN (ESQUINA SUPERIOR DERECHA) -->
                 <div class="flex items-start justify-between w-full -mt-0.5 mb-1">
@@ -474,7 +484,13 @@ function resolver(id, nuevoServicio = null) {
     if (vistaActual === 'archivo') return;
     
     let nov = (RAM_Novedades || []).find(n => String(n.id) === String(id));
-    const srvFinal = nuevoServicio ? normalizarServicio(nuevoServicio) : (nov ? (nov.srv || 'S/A') : 'S/A');
+    if (!nov) return;
+
+    // srv permanece 100% INTACTO (no se modifica)
+    const srvOriginal = nov.srv || 'S/A';
+
+    // servicio se asigna ÚNICAMENTE si viene del drop zone
+    const servicioDrop = nuevoServicio ? normalizarServicio(nuevoServicio) : (nov.servicio || '');
 
     const card = document.getElementById(`card-${id}`);
     if (card) {
@@ -484,9 +500,9 @@ function resolver(id, nuevoServicio = null) {
             let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
             if (idx > -1) {
                 RAM_Novedades[idx].resuelto = true;
+                RAM_Novedades[idx].srv = srvOriginal; // sin modificar
                 if (nuevoServicio) {
-                    RAM_Novedades[idx].srv = srvFinal;
-                    RAM_Novedades[idx].servicio = srvFinal;
+                    RAM_Novedades[idx].servicio = servicioDrop; // asignación del drop
                 }
                 RAM_Novedades[idx].fecha_resolucion = new Date().toISOString();
             }
@@ -496,9 +512,9 @@ function resolver(id, nuevoServicio = null) {
         let idx = RAM_Novedades.findIndex(n => String(n.id) === String(id));
         if (idx > -1) {
             RAM_Novedades[idx].resuelto = true;
+            RAM_Novedades[idx].srv = srvOriginal; // sin modificar
             if (nuevoServicio) {
-                RAM_Novedades[idx].srv = srvFinal;
-                RAM_Novedades[idx].servicio = srvFinal;
+                RAM_Novedades[idx].servicio = servicioDrop; // asignación del drop
             }
             RAM_Novedades[idx].fecha_resolucion = new Date().toISOString();
         }
@@ -506,23 +522,23 @@ function resolver(id, nuevoServicio = null) {
     }
 
     const payload = {
-        nom: nov ? nov.nom : '',
-        tractor: nov ? nov.tractor : '',
-        srv: srvFinal,
-        servicio: srvFinal,
-        n_ute: nov ? nov.n_ute : 'S/D',
-        tipo_novedad: nov ? nov.tipo_novedad : 'LIBRES',
-        terminal: nov ? nov.terminal : '',
-        fecha_objetivo: nov ? nov.fecha_objetivo : '',
-        detalle: nov ? nov.detalle : '',
-        creador: nov ? (nov.creador || nov.usuario) : 'Anónimo',
-        menciones: nov ? nov.menciones : []
+        nom: nov.nom || '',
+        tractor: nov.tractor || '',
+        srv: srvOriginal,          // srv intacto (sin modificar)
+        servicio: servicioDrop,   // impreso en la propiedad servicio del JSON (Header SERVICIO)
+        n_ute: nov.n_ute || 'S/D',
+        tipo_novedad: nov.tipo_novedad || 'LIBRES',
+        terminal: nov.terminal || '',
+        fecha_objetivo: nov.fecha_objetivo || '',
+        detalle: nov.detalle || '',
+        creador: nov.creador || nov.usuario || 'Anónimo',
+        menciones: nov.menciones || []
     };
 
     fetch(`${API_URL}/api/novedades/actualizar`, { 
         method: 'POST', 
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: 'resolver', id_novedad: id, payload: payload }) 
+        body: JSON.stringify({ action: 'resolver', id_novedad: String(id), payload: payload }) 
     }).catch(e => console.error("Error al persistir resolución:", e));
 }
 
