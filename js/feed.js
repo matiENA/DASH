@@ -364,6 +364,27 @@ function formatearTimestamp(ts, id) {
     return `${dia} ${mes} ${hh}:${mm}`;
 }
 
+function copiarPatente(texto, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    if (!texto || texto === 'S/D' || texto === '-') return;
+
+    navigator.clipboard.writeText(texto).then(() => {
+        let el = event ? event.currentTarget : null;
+        if (el) {
+            let originalHtml = el.innerHTML;
+            el.innerHTML = `<span class="text-emerald-700 dark:text-emerald-400 font-black animate-pulse">✓ COPIADO</span>`;
+            setTimeout(() => {
+                el.innerHTML = originalHtml;
+            }, 1200);
+        }
+    }).catch(err => {
+        console.error('Error al copiar patente:', err);
+    });
+}
+
 function generarHtmlCard(n) {
     let timeFormatted = formatearTimestamp(n.timestamp, n.id);
     
@@ -408,7 +429,10 @@ function generarHtmlCard(n) {
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${srvFinal}</span>
                     ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
-                    <span class="text-[12px] font-extrabold text-black tracking-wide">${tractorFinal}</span>
+                    <span onclick="copiarPatente('${(tractorFinal || '').replace(/'/g, "\\'")}', event)" class="text-[12px] font-extrabold text-black tracking-wide cursor-pointer hover:bg-black/10 px-1 py-0.5 rounded transition-all active:scale-95 flex items-center gap-1" title="Haz clic para copiar patente">
+                        ${tractorFinal}
+                        <svg class="w-3 h-3 opacity-60 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    </span>
                     ${obtenerHtmlButtonTerminal(n)}
                 </div>
 
@@ -467,7 +491,10 @@ function generarHtmlCard(n) {
             <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${srvFinal}</span>
                 ${uteBadge ? `<span class="border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase">${uteBadge}</span>` : ''}
-                <span class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide">${tractorFinal}</span>
+                <span onclick="copiarPatente('${(tractorFinal || '').replace(/'/g, "\\'")}', event)" class="text-[11px] font-bold ${n.resuelto ? 'text-emerald-600 dark:text-emerald-500' : 'text-indigo-500 dark:text-indigo-400'} tracking-wide cursor-pointer hover:bg-indigo-50 dark:hover:bg-slate-800 px-1 py-0.5 rounded transition-all active:scale-95 inline-flex items-center gap-1" title="Haz clic para copiar patente">
+                    ${tractorFinal}
+                    <svg class="w-3 h-3 opacity-60 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </span>
                 ${n.fecha_objetivo ? `<span class="px-1.5 py-0.5 text-[9px] font-black ${cfg.text} whitespace-nowrap rounded border ${cfg.border}">${n.fecha_objetivo.split('-').reverse().join('/')}</span>` : ''}
             </div>
         </div>
