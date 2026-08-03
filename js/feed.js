@@ -1,6 +1,101 @@
 let autoScrollIntervals = [];
 let cardSeleccionadaId = null;
 
+function esModoCartelera() {
+    return document.documentElement.classList.contains('modo-cartelera') || 
+           document.documentElement.classList.contains('vista-solida');
+}
+
+function obtenerPesosColumnasGuardados() {
+    try {
+        const str = localStorage.getItem('column_flex_weights');
+        if (!str) return {};
+        return JSON.parse(str);
+    } catch(e) {
+        return {};
+    }
+}
+
+function guardarPesosColumnas(mapaPesos) {
+    try {
+        localStorage.setItem('column_flex_weights', JSON.stringify(mapaPesos));
+    } catch(e) {}
+}
+
+let isResizingColumn = false;
+
+function iniciarResizingColumna(e, catKeyLeft, catKeyRight) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    if (typeof esModoCartelera === 'function' && esModoCartelera()) return;
+
+    const leftCol = document.querySelector(`[data-cat="${catKeyLeft}"]`);
+    const rightCol = document.querySelector(`[data-cat="${catKeyRight}"]`);
+    const container = document.getElementById('kanban-columns-wrapper');
+    if (!leftCol || !rightCol || !container) return;
+
+    isResizingColumn = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const containerWidth = container.getBoundingClientRect().width;
+    const startX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+
+    const leftRect = leftCol.getBoundingClientRect();
+    const rightRect = rightCol.getBoundingClientRect();
+
+    const startLeftWidth = leftRect.width;
+    const startRightWidth = rightRect.width;
+    const combinedWidth = startLeftWidth + startRightWidth;
+
+    const onMouseMove = (moveEvent) => {
+        if (!isResizingColumn) return;
+        const currentX = moveEvent.clientX || (moveEvent.touches && moveEvent.touches[0] ? moveEvent.touches[0].clientX : startX);
+        const deltaX = currentX - startX;
+
+        // Ancho mínimo por columna dentro del contenedor (130px)
+        const minWidth = 130;
+        let newLeftWidth = Math.max(minWidth, Math.min(combinedWidth - minWidth, startLeftWidth + deltaX));
+        let newRightWidth = combinedWidth - newLeftWidth;
+
+        // Convertir a flex-grow relativo
+        const baseWidth = containerWidth / 5;
+        const leftFlex = Math.max(0.3, newLeftWidth / baseWidth);
+        const rightFlex = Math.max(0.3, newRightWidth / baseWidth);
+
+        leftCol.style.flex = `${leftFlex} 1 0%`;
+        rightCol.style.flex = `${rightFlex} 1 0%`;
+
+        const pesos = obtenerPesosColumnasGuardados();
+        pesos[catKeyLeft] = leftFlex;
+        pesos[catKeyRight] = rightFlex;
+        guardarPesosColumnas(pesos);
+
+        // Recalcular autoScroll
+        const carouselLeft = leftCol.querySelector('[id^="carrusel-cat-"]');
+        const carouselRight = rightCol.querySelector('[id^="carrusel-cat-"]');
+        if (carouselLeft && typeof inicializarAutoScroll === 'function') inicializarAutoScroll(carouselLeft.id);
+        if (carouselRight && typeof inicializarAutoScroll === 'function') inicializarAutoScroll(carouselRight.id);
+    };
+
+    const onMouseUp = () => {
+        isResizingColumn = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        window.removeEventListener('touchmove', onMouseMove);
+        window.removeEventListener('touchend', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onMouseMove, { passive: false });
+    window.addEventListener('touchend', onMouseUp);
+}
+
 function cambiarVista(vista) {
     vistaActual = vista;
     const tabIds = ['btn-todas', 'btn-archivo', 'btn-mis_novedades', 'btn-menciones'];
@@ -146,7 +241,21 @@ function renderizar() {
     const usuarioActual = sesion && sesion.usuario ? sesion.usuario.toUpperCase() : '';
     
     const activas = RAM_Novedades.filter(n => !n.resuelto).sort((a, b) => b.id - a.id);
+function restablecerAnchoSeccion(catKey, event) {
+    if (event) event.stopPropagation();
+    try {
+        const str = localStorage.getItem('column_section_widths');
+        if (str) {
+            const widths = JSON.parse(str);
+            delete widths[catKey];
+            localStorage.setItem('column_section_widths', JSON.stringify(widths));
+        }
+    } catch(e) {}
+    renderizar();
+}
+
     const resueltasTodas = RAM_Novedades.filter(n => n.resuelto).sort((a, b) => b.id - a.id);
+    const gridViewClass = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full h-full min-h-0 overflow-y-auto custom-scrollbar p-1 items-start content-start flex-1";
 
     if (vistaActual === 'archivo') {
         if (resueltasTodas.length === 0) {
@@ -154,8 +263,7 @@ function renderizar() {
             return;
         }
 
-        const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
-        let htmlResueltos = `<div class="${gridClass}">`;
+        let htmlResueltos = `<div class="${gridViewClass}">`;
         resueltasTodas.forEach(n => { htmlResueltos += generarHtmlCard(n); });
         htmlResueltos += `</div>`;
         
@@ -170,8 +278,7 @@ function renderizar() {
             container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-14 h-14 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg><span class="font-extrabold tracking-widest uppercase text-xs">No has creado novedades activas</span></div>`;
             return;
         }
-        const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
-        let htmlMis = `<div class="${gridClass}">`;
+        let htmlMis = `<div class="${gridViewClass}">`;
         misNovs.forEach(n => { htmlMis += generarHtmlCard(n); });
         htmlMis += `</div>`;
         container.innerHTML = htmlMis;
@@ -185,8 +292,7 @@ function renderizar() {
             container.innerHTML = `<div class="col-span-full h-64 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 opacity-80"><svg class="w-14 h-14 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg><span class="font-extrabold tracking-widest uppercase text-xs">No tienes menciones pendientes</span></div>`;
             return;
         }
-        const gridClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start content-start w-full mb-8";
-        let htmlMenciones = `<div class="${gridClass}">`;
+        let htmlMenciones = `<div class="${gridViewClass}">`;
         mencionesNovs.forEach(n => { htmlMenciones += generarHtmlCard(n); });
         htmlMenciones += `</div>`;
         container.innerHTML = htmlMenciones;
@@ -210,21 +316,21 @@ function renderizar() {
     let htmlFinal = '';
     let idsCarruseles = [];
 
-    const columnClass = "flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 pb-4 h-full flex-1";
-    const carouselClass = "flex gap-5 overflow-x-auto pb-4 pt-2 custom-scrollbar items-center w-full";
+    const columnClass = "flex flex-col gap-3.5 overflow-y-auto custom-scrollbar pr-1.5 pb-2 h-full min-h-0 flex-1";
+    const carouselClass = "flex gap-4 overflow-x-auto pb-2 pt-1 custom-scrollbar items-center w-full flex-1";
 
     // RENDERIZAR LIBRES PRIMERO (HORIZONTAL TOP)
     let carouselIdLibres = `carrusel-cat-libres`;
     idsCarruseles.push(carouselIdLibres);
 
     htmlFinal += `
-    <section class="w-full mb-8">
-        <div class="flex items-center gap-4 w-full">
-            <div class="relative shrink-0 flex items-center justify-center h-[70px]">
-                <button id="btn-quick-libre" onclick="toggleQuickAddLibre()" class="w-[70px] h-full rounded-xl border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all flex items-center justify-center group focus:outline-none shadow-sm cursor-pointer z-10 bg-white dark:bg-slate-900" title="Agregar Libre Rápido">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+    <section class="w-full mb-3 shrink-0">
+        <div class="flex items-center gap-3 w-full">
+            <div class="relative shrink-0 flex items-center justify-center h-[65px]">
+                <button id="btn-quick-libre" onclick="toggleQuickAddLibre()" class="w-[65px] h-full rounded-xl border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all flex items-center justify-center group focus:outline-none shadow-sm cursor-pointer z-10 bg-white dark:bg-slate-900" title="Agregar Libre Rápido">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 </button>
-                <div id="quick-add-libre-dropdown" class="hidden absolute top-[80px] left-0 w-72 md:w-80 bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-800 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col">
+                <div id="quick-add-libre-dropdown" class="hidden absolute top-[75px] left-0 w-72 md:w-80 bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-800 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col">
                     <input type="text" id="quick-input-nom" placeholder="BUSCAR PARA LIBERAR..." class="w-full bg-transparent p-3 text-sm font-black text-slate-800 dark:text-slate-200 outline-none uppercase border-b border-slate-100 dark:border-slate-800 placeholder-slate-400" autocomplete="off" oninput="filtrarQuickChoferes()" onfocus="filtrarQuickChoferes()">
                     <div id="quick-dropdown-choferes" class="max-h-64 overflow-y-auto custom-scrollbar"></div>
                 </div>
@@ -234,30 +340,40 @@ function renderizar() {
     categorias['LIBRES'].items.forEach(n => { htmlFinal += generarHtmlCard(n); });
     htmlFinal += `</div></div></section>`;
 
-    // RENDERIZAR COLUMNAS KANBAN
-    htmlFinal += `<div class="flex gap-4 lg:gap-6 w-full h-full overflow-x-auto custom-scrollbar pb-2 items-stretch">`;
+    // RENDERIZAR COLUMNAS KANBAN PROPORCIONALES (CONTENIDAS 100% EN PANTALLA)
+    htmlFinal += `<div id="kanban-columns-wrapper" class="flex gap-2 md:gap-3 w-full h-full min-h-0 flex-1 overflow-hidden items-stretch">`;
     
-    Object.keys(categorias).forEach((key, index) => {
-        if (key === 'LIBRES') return;
-        
+    const visibleKeys = Object.keys(categorias).filter(k => k !== 'LIBRES' && categorias[k].items.length > 0);
+    const pesosGuardados = obtenerPesosColumnasGuardados();
+
+    visibleKeys.forEach((key, index) => {
         const cat = categorias[key];
-        if (cat.items.length === 0) return; // 🚫 Ocultar contenedores de clasificación vacíos
-        
         let carouselId = `carrusel-cat-${index}`;
         idsCarruseles.push(carouselId);
 
+        const flexWeight = pesosGuardados[key] || 1;
+        const styleAttr = `style="flex: ${flexWeight} 1 0%; min-width: 130px;"`;
+
         htmlFinal += `
-        <section class="flex-1 min-w-[270px] border-2 border-dashed ${cat.borderColor} rounded-2xl p-4 bg-transparent flex flex-col h-full max-h-full overflow-hidden transition-all duration-300">
-            <div class="w-full mb-4 shrink-0 flex items-center justify-center pb-2">
-                <h2 class="text-[11px] font-black uppercase tracking-widest ${cat.colorText} text-center">
+        <section data-cat="${key}" ${styleAttr} class="resizable-column flex-1 border-2 border-dashed ${cat.borderColor} rounded-2xl p-3 bg-transparent flex flex-col h-full min-h-0 overflow-hidden transition-all duration-100 relative">
+            <div class="w-full mb-2 shrink-0 flex items-center justify-center pb-1 border-b border-slate-200/40 dark:border-slate-800/40">
+                <h2 class="text-[11px] font-black uppercase tracking-widest ${cat.colorText} text-center flex-1 select-none truncate">
                     ${cat.titulo}
                 </h2>
             </div>
             <div id="${carouselId}" class="${columnClass}">`;
 
         cat.items.forEach(n => { htmlFinal += generarHtmlCard(n); });
-        
         htmlFinal += `</div></section>`;
+
+        // Si no es la última columna, insertar divisor redimensionable (splitter)
+        if (index < visibleKeys.length - 1) {
+            const nextKey = visibleKeys[index + 1];
+            htmlFinal += `
+            <div onmousedown="iniciarResizingColumna(event, '${key}', '${nextKey}')" ontouchstart="iniciarResizingColumna(event, '${key}', '${nextKey}')" class="col-splitter w-2.5 h-full cursor-col-resize shrink-0 flex items-center justify-center group z-20 hover:bg-indigo-500/20 active:bg-indigo-500/40 transition-colors rounded-full -mx-1" title="Arrastrar para ajustar proporción de columnas">
+                <div class="w-0.5 h-8 bg-slate-400/40 group-hover:bg-indigo-400 rounded-full transition-colors"></div>
+            </div>`;
+        }
     });
 
     htmlFinal += `</div>`;
@@ -356,12 +472,33 @@ function formatearTimestamp(ts, id) {
             return '';
         }
     }
-    const dia = d.getDate();
-    const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-    const mes = meses[d.getMonth()];
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${dia} ${mes} ${hh}:${mm}`;
+    
+    try {
+        const formatter = new Intl.DateTimeFormat('es-AR', {
+            timeZone: 'America/Argentina/Buenos_Aires',
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        const partes = formatter.formatToParts(d);
+        let dia = '', mes = '', hh = '', mm = '';
+        partes.forEach(p => {
+            if (p.type === 'day') dia = p.value;
+            if (p.type === 'month') mes = p.value.replace('.', '');
+            if (p.type === 'hour') hh = p.value;
+            if (p.type === 'minute') mm = p.value;
+        });
+        return `${dia} ${mes} ${hh}:${mm}`;
+    } catch(e) {
+        const dia = d.getDate();
+        const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+        const mes = meses[d.getMonth()];
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${dia} ${mes} ${hh}:${mm}`;
+    }
 }
 
 function copiarPatente(texto, event) {
@@ -521,6 +658,7 @@ function generarHtmlCard(n) {
 }
 
 function resolver(id, nuevoServicio = null) {
+    if (typeof esModoCartelera === 'function' && esModoCartelera()) return;
     if (vistaActual === 'archivo') return;
     
     let nov = (RAM_Novedades || []).find(n => String(n.id) === String(id));
@@ -586,6 +724,7 @@ function resolver(id, nuevoServicio = null) {
 // QUICK ADD LIBRE (Acceso Rápido en Vía Primaria)
 // =========================================================
 function toggleQuickAddLibre() {
+    if (typeof esModoCartelera === 'function' && esModoCartelera()) return;
     const sesion = obtenerUsuarioSesion();
     if (!sesion || !sesion.usuario) {
         toggleDropdownLogin(true);

@@ -4,12 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Novedades Live | EOR</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;900&family=Zilla+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;900&family=Zilla+Slab:wght@400;500;600;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'], zilla: ['Zilla Slab', 'serif'] } } } }
+        tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'], zilla: ['Zilla Slab', 'serif'], mono: ['Roboto Mono', 'monospace'] } } } }
     </script>
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* MODO CARTELERA / VISTA SÓLIDA: DESHABILITAR TOTALMENTE TODA EDICIÓN */
+        .modo-cartelera .btn-card-edit,
+        .modo-cartelera .btn-card-resolve,
+        .modo-cartelera button[onclick*="toggleDropdownTerminalCard"],
+        .modo-cartelera #btn-quick-libre,
+        .modo-cartelera .mention-input-wrapper,
+        .modo-cartelera #btn-fab-nueva,
+        .modo-cartelera .btn-mention-remove,
+        .vista-solida .btn-card-edit,
+        .vista-solida .btn-card-resolve,
+        .vista-solida button[onclick*="toggleDropdownTerminalCard"],
+        .vista-solida #btn-quick-libre,
+        .vista-solida .mention-input-wrapper,
+        .vista-solida #btn-fab-nueva,
+        .vista-solida .btn-mention-remove {
+            display: none !important;
+            pointer-events: none !important;
+        }
+
+        .modo-cartelera article,
+        .vista-solida article {
+            cursor: default !important;
+        }
+
+        /* MODO CARTELERA: OCULTAR EL HEADER COMPLETO Y DEJAR SOLO LA HORA CENTRADA */
+        .modo-cartelera header > div > div:not(#clock-argentina),
+        .vista-solida header > div > div:not(#clock-argentina) {
+            display: none !important;
+        }
+
+        .modo-cartelera header > div,
+        .vista-solida header > div {
+            justify-content: center !important;
+            padding-top: 0.15rem !important;
+            padding-bottom: 0.15rem !important;
+        }
+
+        .modo-cartelera header,
+        .vista-solida header {
+            padding-top: 0.35rem !important;
+            padding-bottom: 0.35rem !important;
+            background: rgba(15, 23, 42, 0.96) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+
+        .modo-cartelera #clock-argentina,
+        .vista-solida #clock-argentina {
+            font-size: 2.25rem !important;
+            line-height: 2.5rem !important;
+            margin: 0 auto !important;
+            cursor: pointer !important;
+        }
+    </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden bg-slate-100/70 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-300 antialiased selection:bg-indigo-500 selection:text-white">
 
@@ -36,12 +90,17 @@
                 <button onclick="cambiarVista('menciones')" id="btn-menciones" class="flex-1 px-4 py-1.5 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 text-center whitespace-nowrap">@</button>
             </div>
 
+            <!-- RELOJ DIGITAL ARGENTINA (24H - ROBOTO MONO BOLD) -->
+            <div id="clock-argentina" onclick="if(typeof esModoCartelera === 'function' && esModoCartelera()) toggleCartelera()" class="px-4 py-1 font-mono font-extrabold text-2xl sm:text-3xl tracking-wider text-slate-900 dark:text-white shrink-0 select-none drop-shadow-sm flex items-center justify-center transition-transform active:scale-95 cursor-pointer" style="font-family: 'Roboto Mono', monospace; font-weight: 700;" title="Reloj Argentina 24h (En Modo Cartelera: Clic para salir)">
+                --:--
+            </div>
+
             <!-- DERECHA: ACCIONES & USUARIO -->
             <div class="flex items-center gap-2.5 shrink-0">
-                <!-- SWITCH VISTA SÓLIDA -->
-                <button onclick="toggleVistaSolida()" id="btn-vista-solida" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all border border-slate-200/60 dark:border-slate-700/60 active:scale-95 shadow-sm text-xs font-extrabold flex items-center gap-1.5 cursor-pointer" title="Alternar Vista Sólida (Solo Lectura)">
-                    <span id="dot-vista-solida" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                    <span class="hidden sm:inline">Vista Sólida</span>
+                <!-- SWITCH CARTELERA -->
+                <button onclick="toggleCartelera()" id="btn-cartelera" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all border border-slate-200/60 dark:border-slate-700/60 active:scale-95 shadow-sm text-xs font-extrabold flex items-center gap-1.5 cursor-pointer" title="Alternar Modo Cartelera (Deshabilita toda edición)">
+                    <span id="dot-cartelera" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                    <span class="hidden sm:inline">Cartelera</span>
                 </button>
 
                 <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700/80 transition-all focus:outline-none border border-slate-200/60 dark:border-slate-700/60 active:scale-95 shadow-sm" title="Alternar Modo Oscuro">
@@ -54,9 +113,9 @@
         </div>
     </header>
 
-    <!-- MAIN CONTAINER SIN SCROLLBAR VISIBLE -->
-    <main id="feed-container" class="flex-1 overflow-hidden p-6 pb-20 flex flex-col max-w-[100vw]">
-        <div class="h-full w-full flex flex-col gap-6 overflow-hidden" id="novedades-container">
+    <!-- MAIN CONTAINER QUE OCUPA EL 100% DE ALTO Y ANCHO DE PANTALLA -->
+    <main id="feed-container" class="flex-1 overflow-hidden p-3 md:p-4 flex flex-col h-[calc(100vh-64px)] w-full max-w-full">
+        <div class="h-full w-full flex flex-col gap-3 overflow-hidden flex-1" id="novedades-container">
             <div class="flex justify-center items-center h-40 w-full"><span class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></span></div>
         </div>
     </main>
@@ -268,18 +327,19 @@
             document.documentElement.classList.remove('dark');
         }
 
-        if (localStorage.getItem('vista_solida') === 'true') {
+        if (localStorage.getItem('modo_cartelera') === 'true' || localStorage.getItem('vista_solida') === 'true') {
+            document.documentElement.classList.add('modo-cartelera');
             document.documentElement.classList.add('vista-solida');
         }
 
-        function updateVistaSolidaUI(isSolida) {
-            const dot = document.getElementById('dot-vista-solida');
-            const btn = document.getElementById('btn-vista-solida');
+        function updateCarteleraUI(isCartelera) {
+            const dot = document.getElementById('dot-cartelera') || document.getElementById('dot-vista-solida');
+            const btn = document.getElementById('btn-cartelera') || document.getElementById('btn-vista-solida');
             if (dot) {
-                dot.className = isSolida ? 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'w-2.5 h-2.5 rounded-full bg-slate-400';
+                dot.className = isCartelera ? 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'w-2.5 h-2.5 rounded-full bg-slate-400';
             }
             if (btn) {
-                if (isSolida) {
+                if (isCartelera) {
                     btn.classList.add('border-emerald-500/50', 'text-emerald-600', 'dark:text-emerald-400');
                 } else {
                     btn.classList.remove('border-emerald-500/50', 'text-emerald-600', 'dark:text-emerald-400');
@@ -287,12 +347,18 @@
             }
         }
 
-        function toggleVistaSolida() {
+        function toggleCartelera() {
             const html = document.documentElement;
-            const isSolida = html.classList.toggle('vista-solida');
-            localStorage.setItem('vista_solida', isSolida ? 'true' : 'false');
-            updateVistaSolidaUI(isSolida);
+            const isCartelera = html.classList.toggle('modo-cartelera');
+            html.classList.toggle('vista-solida', isCartelera);
+            localStorage.setItem('modo_cartelera', isCartelera ? 'true' : 'false');
+            localStorage.setItem('vista_solida', isCartelera ? 'true' : 'false');
+            updateCarteleraUI(isCartelera);
+            if (typeof renderizar === 'function') renderizar();
         }
+
+        function updateVistaSolidaUI(isSolida) { updateCarteleraUI(isSolida); }
+        function toggleVistaSolida() { toggleCartelera(); }
 
         function toggleDarkMode() {
             const html = document.documentElement;
@@ -304,8 +370,30 @@
             document.getElementById('icon-sun')?.classList.toggle('hidden', !isDark);
         }
 
+        function actualizarRelojArgentina() {
+            const clockEl = document.getElementById('clock-argentina');
+            if (!clockEl) return;
+            try {
+                const ahora = new Date();
+                const formatter = new Intl.DateTimeFormat('es-AR', {
+                    timeZone: 'America/Argentina/Buenos_Aires',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                clockEl.innerText = formatter.format(ahora);
+            } catch(e) {
+                const ahora = new Date();
+                const hh = String(ahora.getHours()).padStart(2, '0');
+                const mm = String(ahora.getMinutes()).padStart(2, '0');
+                clockEl.innerText = `${hh}:${mm}`;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             updateVistaSolidaUI(document.documentElement.classList.contains('vista-solida'));
+            actualizarRelojArgentina();
+            setInterval(actualizarRelojArgentina, 1000);
         });
     </script>
     

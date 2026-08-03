@@ -39,6 +39,7 @@ function actualizarUITerminalRadio() {
 }
 
 function abrirModalNueva() {
+    if (typeof esModoCartelera === 'function' && esModoCartelera()) return;
     const sesion = obtenerUsuarioSesion();
     if (!sesion || !sesion.usuario) {
         toggleDropdownLogin(true);
@@ -348,6 +349,7 @@ document.addEventListener('click', (e) => {
 });
 
 function abrirEdicion(id) {
+    if (typeof esModoCartelera === 'function' && esModoCartelera()) return;
     const sesion = (typeof obtenerUsuarioSesion === 'function') ? obtenerUsuarioSesion() : null;
     if (!sesion || !sesion.usuario) {
         alert('Debe iniciar sesion para editar novedades.');
