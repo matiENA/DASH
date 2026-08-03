@@ -6,6 +6,207 @@ function esModoCartelera() {
            document.documentElement.classList.contains('vista-solida');
 }
 
+function parsearFechaVencimiento(fechaStr) {
+    if (!fechaStr) return null;
+    let str = String(fechaStr).trim();
+    if (!str || str === '-' || str === 'S/D') return null;
+
+    let parts = str.split('/');
+    if (parts.length === 3) {
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10) - 1;
+        let year = parseInt(parts[2], 10);
+        if (year < 100) year += 2000;
+        return new Date(year, month, day);
+    }
+
+    parts = str.split('-');
+    if (parts.length === 3) {
+        let year = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10) - 1;
+        let day = parseInt(parts[2], 10);
+        return new Date(year, month, day);
+    }
+
+    return null;
+}
+
+function obtenerEstadoVencimiento(fechaStr) {
+    const d = parsearFechaVencimiento(fechaStr);
+    if (!d || isNaN(d.getTime())) return { estado: 'NONE', dias: 999, colorBg: 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400', colorBorder: 'border-slate-300 dark:border-slate-700' };
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+
+    const diffTime = d.getTime() - hoy.getTime();
+    const dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (dias < 0) {
+        // ROJO: Vencido
+        return { estado: 'VENCIDO', dias, colorBg: 'bg-red-500/90 text-white', colorBorder: 'border-red-600 shadow-sm shadow-red-500/40 font-black' };
+    } else if (dias <= 7) {
+        // AMARILLO: Vence en 1 semana
+        return { estado: 'SEMANA', dias, colorBg: 'bg-amber-400 text-slate-950 font-black', colorBorder: 'border-amber-500 shadow-sm shadow-amber-500/40' };
+    } else {
+        // NORMAL / VIGENTE
+        return { estado: 'VIGENTE', dias, colorBg: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold', colorBorder: 'border-emerald-500/30' };
+    }
+}
+
+function obtenerVencimientosTarjeta(tractorPatente, choferNom) {
+    let vencList = [];
+    if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
+        if (RAM_Flota.vencimientosObj && Array.isArray(RAM_Flota.vencimientosObj)) {
+            vencList = RAM_Flota.vencimientosObj;
+        } else if (Array.isArray(RAM_Flota) && RAM_Flota.vencimientosObj) {
+            vencList = RAM_Flota.vencimientosObj;
+        }
+    }
+
+    const normTractor = (tractorPatente || '').trim().toUpperCase();
+    if (!normTractor) return [];
+
+    // Buscar coincidencia por col_b (TRACTOR)
+    const match = vencList.find(v => (v.col_b || '').trim().toUpperCase() === normTractor);
+    if (!match) return [];
+
+    // Mapeo solicitado:
+    // col_g: MASS TR -> MAS T
+    // col_h: VTV TR -> VTV T
+    // col_j: MAS SEMI -> MAS S
+    // col_k: VTV SEMI -> VTV S
+    // col_l: Esp-Es
+    // col_m: VI
+    // col_n: VE
+    const campos = [
+        { label: 'MAS T', val: match.col_g },
+        { label: 'VTV T', val: match.col_h },
+        { label: 'MAS S', val: match.col_j },
+        { label: 'VTV S', val: match.col_k },
+        { label: 'Esp-Es', val: match.col_l },
+        { label: 'VI', val: match.col_m },
+        { label: 'VE', val: match.col_n }
+    ];
+
+    return campos.filter(c => c.val && String(c.val).trim() !== '-' && String(c.val).trim() !== 'S/D').map(c => {
+        const est = obtenerEstadoVencimiento(c.val);
+        return {
+            label: c.label,
+            fecha: c.val,
+            ...est
+        };
+    }).sort((a, b) => a.dias - b.dias);
+}
+
+function gestionarNovedadVencimiento(choferNom, tractorPatente, tipoVencimiento, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    if (typeof esModoCartelera === 'function' && esModoCartelera()) return;
+
+    const normChofer = (choferNom || '').trim().toLowerCase();
+    const normTractor = (tractorPatente || '').trim().toLowerCase();
+
+    // Buscar si existe novedad activa (resuelto === false)
+    const novExistente = (typeof RAM_Novedades !== 'undefined' ? RAM_Novedades : []).find(n => {
+        if (n.resuelto) return false;
+        const nNom = (n.nom || '').trim().toLowerCase();
+        const nTractor = (n.tractor || '').trim().toLowerCase();
+        return (normChofer && nNom === normChofer) || (normTractor && nTractor === normTractor);
+    });
+
+    if (novExistente) {
+        if (typeof abrirEdicion === 'function') abrirEdicion(novExistente.id);
+    } else {
+        if (typeof abrirModalNueva === 'function') {
+            abrirModalNueva();
+            setTimeout(() => {
+                const inputNom = document.getElementById('input-nom');
+                const inputTractor = document.getElementById('input-tractor');
+                const inputDetalle = document.getElementById('input-detalle');
+                if (inputNom && choferNom) inputNom.value = choferNom;
+                if (inputTractor && tractorPatente) inputTractor.value = tractorPatente;
+                if (inputDetalle) inputDetalle.value = `VENCIMIENTO REGISTRADO: ${tipoVencimiento}`;
+            }, 120);
+        }
+    }
+}
+
+let subVistaCertificaciones = 'lista'; // 'lista' (default) o 'cards'
+
+function cambiarSubVistaCertificaciones(subVista, event) {
+    if (event) event.stopPropagation();
+    subVistaCertificaciones = subVista;
+    renderizar();
+}
+
+function obtenerListaCertificacionesUnidad() {
+    let vencList = [];
+    if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
+        if (RAM_Flota.vencimientosObj && Array.isArray(RAM_Flota.vencimientosObj)) {
+            vencList = RAM_Flota.vencimientosObj;
+        } else if (Array.isArray(RAM_Flota) && RAM_Flota.vencimientosObj) {
+            vencList = RAM_Flota.vencimientosObj;
+        }
+    }
+
+    if (!Array.isArray(vencList) || vencList.length === 0) return [];
+
+    let resultado = [];
+
+    vencList.forEach(item => {
+        const tractor = (item.col_b || '').trim().toUpperCase();
+        if (!tractor) return;
+
+        let choferNom = '-';
+        if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
+            if (RAM_Flota.flota) {
+                const keys = Object.keys(RAM_Flota.flota);
+                const foundKey = keys.find(k => (RAM_Flota.flota[k].tractor || '').trim().toUpperCase() === tractor);
+                if (foundKey) {
+                    choferNom = foundKey.toUpperCase();
+                }
+            } else if (Array.isArray(RAM_Flota)) {
+                const info = RAM_Flota.find(c => (c.tractor || '').trim().toUpperCase() === tractor);
+                if (info && (info.nom || info.nombre)) choferNom = (info.nom || info.nombre).toUpperCase();
+            }
+        }
+
+        const campos = [
+            { label: 'MAS T', val: item.col_g },
+            { label: 'VTV T', val: item.col_h },
+            { label: 'MAS S', val: item.col_j },
+            { label: 'VTV S', val: item.col_k },
+            { label: 'Esp-Es', val: item.col_l },
+            { label: 'VI', val: item.col_m },
+            { label: 'VE', val: item.col_n }
+        ];
+
+        campos.forEach(c => {
+            if (!c.val || String(c.val).trim() === '-' || String(c.val).trim() === 'S/D') return;
+
+            const est = obtenerEstadoVencimiento(c.val);
+            // OBVIAR LOS QUE ESTÁN EN REGLA (> 7 DÍAS). SOLO RENDERIZAR VENCIDOS Y A 1 SEMANA
+            if (est.estado === 'VENCIDO' || est.estado === 'SEMANA') {
+                resultado.push({
+                    tractor,
+                    label: c.label,
+                    fecha: c.val,
+                    chofer: choferNom,
+                    estado: est.estado,
+                    dias: est.dias
+                });
+            }
+        });
+    });
+
+    // Ordenar por urgencia (vencidos primero, luego más próximos)
+    resultado.sort((a, b) => a.dias - b.dias);
+    return resultado;
+}
+
 function obtenerPesosColumnasGuardados() {
     try {
         const str = localStorage.getItem('column_flex_weights');
@@ -343,7 +544,7 @@ function restablecerAnchoSeccion(catKey, event) {
     // RENDERIZAR COLUMNAS KANBAN PROPORCIONALES (CONTENIDAS 100% EN PANTALLA)
     htmlFinal += `<div id="kanban-columns-wrapper" class="flex gap-2 md:gap-3 w-full h-full min-h-0 flex-1 overflow-hidden items-stretch">`;
     
-    const visibleKeys = Object.keys(categorias).filter(k => k !== 'LIBRES' && categorias[k].items.length > 0);
+    const visibleKeys = Object.keys(categorias).filter(k => k !== 'LIBRES' && (k === 'CERTIFICACION_UNIDAD' || categorias[k].items.length > 0));
     const pesosGuardados = obtenerPesosColumnasGuardados();
 
     visibleKeys.forEach((key, index) => {
@@ -360,11 +561,51 @@ function restablecerAnchoSeccion(catKey, event) {
                 <h2 class="text-[11px] font-black uppercase tracking-widest ${cat.colorText} text-center flex-1 select-none truncate">
                     ${cat.titulo}
                 </h2>
-            </div>
-            <div id="${carouselId}" class="${columnClass}">`;
+            </div>`;
 
-        cat.items.forEach(n => { htmlFinal += generarHtmlCard(n); });
-        htmlFinal += `</div></section>`;
+        if (key === 'CERTIFICACION_UNIDAD' && subVistaCertificaciones === 'lista') {
+            const listaVenc = (typeof obtenerListaCertificacionesUnidad === 'function') ? obtenerListaCertificacionesUnidad() : [];
+            if (listaVenc.length === 0) {
+                htmlFinal += `<div id="${carouselId}" class="${columnClass} justify-center items-center"><span class="text-slate-400 text-xs font-bold opacity-70">Sin vencimientos a 1 semana ni vencidos</span></div>`;
+            } else {
+                htmlFinal += `<div id="${carouselId}" class="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">`;
+                listaVenc.forEach(v => {
+                    const colorFecha = v.estado === 'VENCIDO' ? 'text-red-500 font-extrabold' : 'text-amber-400 font-extrabold';
+                    htmlFinal += `
+                    <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-slate-900/90 border border-slate-800/80 hover:bg-slate-800/90 transition-colors gap-2 shrink-0">
+                        <div class="flex items-center gap-2 truncate flex-1 min-w-0">
+                            <span class="font-black text-indigo-400 cursor-pointer hover:underline text-[12px] shrink-0" onclick="copiarPatente('${v.tractor}', event)" title="Haz clic para copiar patente">${v.tractor}</span>
+                            <span class="font-black text-slate-100 text-[11px] shrink-0">${v.label}</span>
+                            <span class="${colorFecha} text-[11px] shrink-0">${v.fecha}</span>
+                            <span class="text-slate-300 font-bold truncate text-[11px] flex-1 min-w-0">${v.chofer || '-'}</span>
+                        </div>
+                        <button onclick="gestionarNovedadVencimiento('${(v.chofer || '').replace(/'/g, "\\'")}', '${v.tractor}', '${v.label}', event)" class="btn-card-edit w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-800 hover:text-indigo-400 text-slate-400 cursor-pointer active:scale-95 ml-1" title="Modificar o crear novedad para ${v.label}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                    </div>`;
+                });
+                htmlFinal += `</div>`;
+            }
+        } else {
+            htmlFinal += `<div id="${carouselId}" class="${columnClass}">`;
+            if (cat.items.length === 0) {
+                htmlFinal += `<div class="flex-1 flex justify-center items-center text-slate-400 text-xs font-bold opacity-70">Sin novedades cargadas</div>`;
+            } else {
+                cat.items.forEach(n => { htmlFinal += generarHtmlCard(n); });
+            }
+            htmlFinal += `</div>`;
+        }
+
+        // Puntos de conmutación de sub-vista (DOTS ⚪ ⚪) en el pie de CERTIFICACIONES DE UNIDAD
+        if (key === 'CERTIFICACION_UNIDAD') {
+            htmlFinal += `
+            <div class="w-full shrink-0 flex items-center justify-center gap-3 pt-2 border-t border-slate-200/40 dark:border-slate-800/40 mt-auto">
+                <button type="button" onclick="cambiarSubVistaCertificaciones('lista', event)" class="w-3 h-3 rounded-full transition-all cursor-pointer ${subVistaCertificaciones === 'lista' ? 'bg-white scale-125 shadow-md shadow-white/40' : 'bg-slate-600 hover:bg-slate-400'}" title="Ver Lista de Vencimientos (VTV/MASS)"></button>
+                <button type="button" onclick="cambiarSubVistaCertificaciones('cards', event)" class="w-3 h-3 rounded-full transition-all cursor-pointer ${subVistaCertificaciones === 'cards' ? 'bg-white scale-125 shadow-md shadow-white/40' : 'bg-slate-600 hover:bg-slate-400'}" title="Ver Tarjetas de Novedades"></button>
+            </div>`;
+        }
+
+        htmlFinal += `</section>`;
 
         // Si no es la última columna, insertar divisor redimensionable (splitter)
         if (index < visibleKeys.length - 1) {
@@ -541,29 +782,7 @@ function generarHtmlCard(n) {
     let uteRaw = (infoFlota && infoFlota.n_ute) ? infoFlota.n_ute : (n.n_ute || '');
     let uteBadge = (uteRaw && uteRaw !== 'S/D') ? uteRaw : '';
 
-    let htmlVencimientos = '';
-    if (!esModoCartelera()) {
-        const listVenc = obtenerVencimientosTarjeta(tractorFinal, n.nom);
-        if (listVenc.length > 0) {
-            htmlVencimientos = `
-            <div class="mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-800 flex flex-col gap-1.5 w-full">
-                <div class="flex items-center justify-between">
-                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Vencimientos</span>
-                </div>
-                <div class="flex flex-wrap gap-1.5 items-center">
-                    ${listVenc.map(v => `
-                        <div class="flex items-center gap-1 border px-2 py-0.5 rounded-lg text-[9px] ${v.colorBg} ${v.colorBorder}">
-                            <span class="font-black uppercase">${v.label}:</span>
-                            <span class="font-bold">${v.fecha}</span>
-                            <button onclick="gestionarNovedadVencimiento('${(n.nom || '').replace(/'/g, "\\'")}', '${(tractorFinal || '').replace(/'/g, "\\'")}', '${v.label}', event)" class="btn-card-edit w-5 h-5 rounded border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:text-indigo-500 dark:hover:text-indigo-400 text-slate-500 dark:text-slate-400 cursor-pointer active:scale-95 ml-1" title="Modificar o crear novedad para ${v.label}">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                            </button>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
-        }
-    }
+
 
     if (n.tipo_novedad === 'LIBRES') {
         let tieneDetalle = n.detalle && n.detalle.trim().length > 0;
@@ -598,7 +817,7 @@ function generarHtmlCard(n) {
                     <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-wrap break-words">${n.detalle}</p>
                 </div>` : ''}
 
-                ${htmlVencimientos}
+
 
                 <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-black text-black uppercase mt-2">
                     <span class="flex items-center gap-1 shrink-0">
@@ -660,7 +879,7 @@ function generarHtmlCard(n) {
             <p class="${cfg.text} text-xs font-semibold font-zilla leading-relaxed whitespace-pre-wrap break-words">${n.detalle}</p>
         </div>` : ''}
 
-        ${htmlVencimientos}
+
 
         <div class="flex flex-wrap items-center gap-1.5 text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-auto">
             <span class="uppercase flex items-center gap-1 shrink-0" title="Creador">
