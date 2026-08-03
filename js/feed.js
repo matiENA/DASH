@@ -525,7 +525,6 @@ function copiarPatente(texto, event) {
 function generarHtmlCard(n) {
     let timeFormatted = formatearTimestamp(n.timestamp, n.id);
     
-    // 👉 Búsqueda dinámica en RAM_Flota para auto-actualizar n_ute, tractor y srv si están disponibles en RAM
     let normNom = (n.nom || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
     let infoFlota = null;
     
@@ -542,14 +541,36 @@ function generarHtmlCard(n) {
     let uteRaw = (infoFlota && infoFlota.n_ute) ? infoFlota.n_ute : (n.n_ute || '');
     let uteBadge = (uteRaw && uteRaw !== 'S/D') ? uteRaw : '';
 
-    // DISEÑO ÚNICO PARA "LIBRES" CON COLOR CYAN SÓLIDO (#00FFFF) SEGÚN FIGMA
+    let htmlVencimientos = '';
+    if (!esModoCartelera()) {
+        const listVenc = obtenerVencimientosTarjeta(tractorFinal, n.nom);
+        if (listVenc.length > 0) {
+            htmlVencimientos = `
+            <div class="mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-800 flex flex-col gap-1.5 w-full">
+                <div class="flex items-center justify-between">
+                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Vencimientos</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5 items-center">
+                    ${listVenc.map(v => `
+                        <div class="flex items-center gap-1 border px-2 py-0.5 rounded-lg text-[9px] ${v.colorBg} ${v.colorBorder}">
+                            <span class="font-black uppercase">${v.label}:</span>
+                            <span class="font-bold">${v.fecha}</span>
+                            <button onclick="gestionarNovedadVencimiento('${(n.nom || '').replace(/'/g, "\\'")}', '${(tractorFinal || '').replace(/'/g, "\\'")}', '${v.label}', event)" class="btn-card-edit w-5 h-5 rounded border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:text-indigo-500 dark:hover:text-indigo-400 text-slate-500 dark:text-slate-400 cursor-pointer active:scale-95 ml-1" title="Modificar o crear novedad para ${v.label}">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        }
+    }
+
     if (n.tipo_novedad === 'LIBRES') {
         let tieneDetalle = n.detalle && n.detalle.trim().length > 0;
         let cardHeight = tieneDetalle ? 'min-h-[90px] py-3' : 'min-h-[85px] py-2.5';
         return `
         <article id="card-${n.id}" draggable="true" ondragstart="iniciarDragCard(event, ${n.id})" ondragend="finalizarDragCard(event)" class="rounded-xl p-3 relative transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 cursor-grab active:cursor-grabbing ${cardHeight}">
             <div class="card-inner-content flex flex-col w-full transition-opacity duration-200">
-                <!-- ROW 1: NOMBRE Y BOTONES DE ACCIÓN (ESQUINA SUPERIOR DERECHA) -->
                 <div class="flex items-start justify-between w-full -mt-0.5 mb-1">
                     <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight flex-1 pr-1">${n.nom}</h3>
                     <div class="flex items-center gap-1 shrink-0 -mt-1 -mr-1">
@@ -562,7 +583,6 @@ function generarHtmlCard(n) {
                     </div>
                 </div>
 
-                <!-- FILA ÚNICA DE DATOS: SRV (READ-ONLY), UTE, TRACTOR, TERMINAL BADGE -->
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${srvFinal}</span>
                     ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
@@ -578,6 +598,8 @@ function generarHtmlCard(n) {
                     <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-wrap break-words">${n.detalle}</p>
                 </div>` : ''}
 
+                ${htmlVencimientos}
+
                 <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-black text-black uppercase mt-2">
                     <span class="flex items-center gap-1 shrink-0">
                         <span class="text-purple-700">👤</span>
@@ -592,7 +614,6 @@ function generarHtmlCard(n) {
                 </div>
             </div>
 
-            <!-- DESPLEGABLE FUERA DE card-inner-content (MANTIENE 100% OPACIDAD VIBRANTE) -->
             ${obtenerHtmlButtonTerminal(n) ? obtenerHtmlDropdownTerminal(n) : ''}
         </article>`;
     }
@@ -600,7 +621,7 @@ function generarHtmlCard(n) {
     let cfg = { bg: 'bg-slate-50/50 dark:bg-slate-900/40', text: 'text-slate-700 dark:text-slate-300', border: 'border-slate-200/50 dark:border-slate-700/50' };
     if (n.tipo_novedad === 'BAJA_DIAGRAMA') cfg = { bg: 'bg-red-50/50 dark:bg-red-950/20', text: 'text-red-600 dark:text-red-500', border: 'border-red-200/50 dark:border-red-900/30' };
     if (n.tipo_novedad === 'CERTIFICACION_UNIDAD') cfg = { bg: 'bg-orange-50/50 dark:bg-orange-950/20', text: 'text-orange-600 dark:text-orange-500', border: 'border-orange-200/50 dark:border-orange-900/30' };
-    if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { bg: 'bg-emerald-50/50 dark:bg-emerald-950/20', text: 'text-emerald-600 dark:text-emerald-500', border: 'border-emerald-200/50 dark:border-emerald-900/30' };
+    if (n.tipo_novedad === 'EXAMEN_CHOFER') cfg = { bg: 'bg-emerald-50/50 dark:emerald-950/20', text: 'text-emerald-600 dark:text-emerald-500', border: 'border-emerald-200/50 dark:border-emerald-900/30' };
     if (n.tipo_novedad === 'REPARACION') cfg = { bg: 'bg-indigo-50/50 dark:bg-indigo-950/20', text: 'text-indigo-600 dark:text-indigo-500', border: 'border-indigo-200/50 dark:border-indigo-900/30' };
     if (n.tipo_novedad === 'ESTADO_DEMORA') cfg = { bg: 'bg-[#D28976]/10 dark:bg-[#D28976]/20', text: 'text-[#D28976]', border: 'border-[#D28976]/30' };
 
@@ -611,7 +632,6 @@ function generarHtmlCard(n) {
     return `
     <article id="card-${n.id}" class="rounded-xl border p-4 relative transition-all duration-300 w-full flex flex-col shrink-0 ${cardClass}">
         <div class="flex flex-col w-full mb-2">
-            <!-- ROW 1: NOMBRE Y BOTONES DE ACCIÓN (MÁS ARRIBA EN LA ESQUINA SUPERIOR DERECHA) -->
             <div class="flex items-start justify-between w-full -mt-1 mb-1">
                 <h3 class="font-extrabold ${n.resuelto ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-900 dark:text-white'} text-sm sm:text-base leading-tight uppercase truncate flex-1 pr-2 tracking-tight">${n.nom}</h3>
                 <div class="flex items-center gap-1.5 shrink-0 -mt-1 -mr-1">
@@ -624,7 +644,6 @@ function generarHtmlCard(n) {
                 </div>
             </div>
 
-            <!-- FILA ÚNICA DE DATOS: SRV, UTE, TRACTOR, FECHA (SIN TERMINAL EN OTRAS CLASIFICACIONES) -->
             <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-slate-200 dark:border-slate-700/50">${srvFinal}</span>
                 ${uteBadge ? `<span class="border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase">${uteBadge}</span>` : ''}
@@ -641,6 +660,8 @@ function generarHtmlCard(n) {
             <p class="${cfg.text} text-xs font-semibold font-zilla leading-relaxed whitespace-pre-wrap break-words">${n.detalle}</p>
         </div>` : ''}
 
+        ${htmlVencimientos}
+
         <div class="flex flex-wrap items-center gap-1.5 text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-auto">
             <span class="uppercase flex items-center gap-1 shrink-0" title="Creador">
                 👤 ${n.creador || n.usuario || 'Anónimo'}
@@ -655,11 +676,6 @@ function generarHtmlCard(n) {
             </span>` : ''}
         </div>
     </article>`;
-}
-
-function resolver(id, nuevoServicio = null) {
-    if (typeof esModoCartelera === 'function' && esModoCartelera()) return;
-    if (vistaActual === 'archivo') return;
     
     let nov = (RAM_Novedades || []).find(n => String(n.id) === String(id));
     if (!nov) return;
