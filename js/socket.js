@@ -24,7 +24,7 @@ function cargarDatosIniciales(intentos = 0) {
 }
 
 function cargarNovedadesIniciales(intentos = 0) {
-    fetch(`${API_URL}/api/novedades`)
+    fetch(`${API_URL}/api/dash/novedades`)
         .then(res => {
             if (!res.ok) throw new Error(`HTTP error ${res.status}`);
             return res.json();
