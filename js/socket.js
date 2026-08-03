@@ -2,19 +2,21 @@
 const socket = io(API_URL + '/dash');
 
 function cargarDatosIniciales(intentos = 0) {
-    fetch(`${API_URL}/api/datos`)
+    fetch(`${API_URL}/api/dash/flota`)
         .then(res => {
             if (!res.ok) throw new Error(`HTTP error ${res.status}`);
             return res.json();
         })
         .then(data => {
-            if (data && data.diagramas && data.diagramas.diagramas) {
-                RAM_Flota = data.diagramas.diagramas;
+            if (data && data.success) {
+                RAM_Flota = data.flota || [];
+                // Agregar flotaMap para búsqueda por nombre normalizado
+                if (data.flotaMap) RAM_Flota.flotaMap = data.flotaMap;
                 if (data.usuarios) RAM_Usuarios = data.usuarios;
             }
         })
         .catch(e => {
-            console.warn(`[Socket] Intento ${intentos + 1}: al obtener /api/datos (${e.message}). Reintentando en 3s...`);
+            console.warn(`[Socket] Intento ${intentos + 1}: al obtener /api/dash/flota (${e.message}). Reintentando en 3s...`);
             if (intentos < 10) {
                 setTimeout(() => cargarDatosIniciales(intentos + 1), 3000);
             }
