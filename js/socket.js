@@ -1,5 +1,5 @@
 // Inicializar la conexión de Socket.IO
-const socket = io(API_URL);
+const socket = io(API_URL + '/dash');
 
 function cargarDatosIniciales(intentos = 0) {
     fetch(`${API_URL}/api/datos`)
@@ -50,13 +50,7 @@ socket.on('connect', () => {
 cargarNovedadesIniciales();
 
 // Escuchadores de eventos de actualización en tiempo real
-socket.on('datos_actualizados', (data) => { 
-    if(data && data.diagramas) {
-        RAM_Flota = data.diagramas;
-        if (data.usuarios) RAM_Usuarios = data.usuarios;
-        if (typeof renderizar === 'function') renderizar();
-    }
-});
+// datos_actualizados ya no se recibe por socket — se carga via HTTP en cargarDatosIniciales()
 
 socket.on('novedades_actualizadas', (data) => { 
     RAM_Novedades = data; 
