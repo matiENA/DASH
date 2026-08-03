@@ -134,12 +134,47 @@ function gestionarNovedadVencimiento(choferNom, tractorPatente, tipoVencimiento,
     }
 }
 
-let subVistaCertificaciones = 'lista'; // 'lista' (default) o 'cards'
+let subVistaCertificaciones = 'cards'; // 'cards' (predeterminado) o 'lista'
 
 function cambiarSubVistaCertificaciones(subVista, event) {
     if (event) event.stopPropagation();
     subVistaCertificaciones = subVista;
     renderizar();
+}
+
+function obtenerNombreChoferPorTractor(tractorPatente) {
+    const tractor = (tractorPatente || '').trim().toUpperCase();
+    if (!tractor) return '-';
+
+    if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
+        // 1. Buscar en RAM_Flota.flota (mapa nombre -> { tractor, ... })
+        if (RAM_Flota.flota && typeof RAM_Flota.flota === 'object') {
+            for (let nomKey in RAM_Flota.flota) {
+                const item = RAM_Flota.flota[nomKey];
+                if (item && item.tractor && item.tractor.trim().toUpperCase() === tractor) {
+                    return nomKey.toUpperCase();
+                }
+            }
+        }
+        
+        // 2. Buscar en RAM_Flota si es un array u objeto con items
+        if (Array.isArray(RAM_Flota)) {
+            const found = RAM_Flota.find(c => (c.tractor || c.TRACTOR || '').trim().toUpperCase() === tractor);
+            if (found && (found.nom || found.nombre || found.chofer)) {
+                return (found.nom || found.nombre || found.chofer).toUpperCase();
+            }
+        }
+    }
+
+    // 3. Buscar en RAM_Novedades (si hay alguna novedad de ese tractor con nombre de chofer)
+    if (typeof RAM_Novedades !== 'undefined' && Array.isArray(RAM_Novedades)) {
+        const foundNov = RAM_Novedades.find(n => (n.tractor || '').trim().toUpperCase() === tractor && n.nom);
+        if (foundNov && foundNov.nom) {
+            return foundNov.nom.toUpperCase();
+        }
+    }
+
+    return '-';
 }
 
 function obtenerListaCertificacionesUnidad() {
@@ -160,19 +195,7 @@ function obtenerListaCertificacionesUnidad() {
         const tractor = (item.col_b || '').trim().toUpperCase();
         if (!tractor) return;
 
-        let choferNom = '-';
-        if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
-            if (RAM_Flota.flota) {
-                const keys = Object.keys(RAM_Flota.flota);
-                const foundKey = keys.find(k => (RAM_Flota.flota[k].tractor || '').trim().toUpperCase() === tractor);
-                if (foundKey) {
-                    choferNom = foundKey.toUpperCase();
-                }
-            } else if (Array.isArray(RAM_Flota)) {
-                const info = RAM_Flota.find(c => (c.tractor || '').trim().toUpperCase() === tractor);
-                if (info && (info.nom || info.nombre)) choferNom = (info.nom || info.nombre).toUpperCase();
-            }
-        }
+        const choferNom = obtenerNombreChoferPorTractor(tractor);
 
         const campos = [
             { label: 'MAS T', val: item.col_g },
@@ -563,7 +586,9 @@ function restablecerAnchoSeccion(catKey, event) {
                 </h2>
             </div>`;
 
-        if (key === 'CERTIFICACION_UNIDAD' && subVistaCertificaciones === 'lista') {
+        const esCartelera = typeof esModoCartelera === 'function' && esModoCartelera();
+
+        if (key === 'CERTIFICACION_UNIDAD' && subVistaCertificaciones === 'lista' && !esCartelera) {
             const listaVenc = (typeof obtenerListaCertificacionesUnidad === 'function') ? obtenerListaCertificacionesUnidad() : [];
             if (listaVenc.length === 0) {
                 htmlFinal += `<div id="${carouselId}" class="${columnClass} justify-center items-center"><span class="text-slate-400 text-xs font-bold opacity-70">Sin vencimientos a 1 semana ni vencidos</span></div>`;
@@ -596,8 +621,8 @@ function restablecerAnchoSeccion(catKey, event) {
             htmlFinal += `</div>`;
         }
 
-        // Puntos de conmutación de sub-vista (DOTS ⚪ ⚪) en el pie de CERTIFICACIONES DE UNIDAD
-        if (key === 'CERTIFICACION_UNIDAD') {
+        // Puntos de conmutación (DOTS ⚪ ⚪) en el pie de CERTIFICACIONES DE UNIDAD (OCULTOS EN CARTELERA)
+        if (key === 'CERTIFICACION_UNIDAD' && !esCartelera) {
             htmlFinal += `
             <div class="w-full shrink-0 flex items-center justify-center gap-3 pt-2 border-t border-slate-200/40 dark:border-slate-800/40 mt-auto">
                 <button type="button" onclick="cambiarSubVistaCertificaciones('lista', event)" class="w-3 h-3 rounded-full transition-all cursor-pointer ${subVistaCertificaciones === 'lista' ? 'bg-white scale-125 shadow-md shadow-white/40' : 'bg-slate-600 hover:bg-slate-400'}" title="Ver Lista de Vencimientos (VTV/MASS)"></button>
