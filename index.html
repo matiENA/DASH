@@ -35,7 +35,22 @@
             cursor: default !important;
         }
 
-        /* MODO CARTELERA: OCULTAR EL HEADER COMPLETO Y DEJAR SOLO LA HORA CENTRADA */
+        /* ESTILOS DE HEADER Y CONTRASTE EN MODO CLARO (LIGHT MODE) */
+        header {
+            background-color: #ffffff !important;
+        }
+        .dark header {
+            background-color: rgba(15, 23, 42, 0.95) !important;
+        }
+
+        #clock-argentina {
+            color: #020617 !important;
+        }
+        .dark #clock-argentina {
+            color: #ffffff !important;
+        }
+
+        /* MODO CARTELERA / VISTA SÓLIDA */
         .modo-cartelera header > div > div:not(#clock-argentina),
         .vista-solida header > div > div:not(#clock-argentina) {
             display: none !important;
@@ -52,7 +67,13 @@
         .vista-solida header {
             padding-top: 0.35rem !important;
             padding-bottom: 0.35rem !important;
-            background: rgba(15, 23, 42, 0.96) !important;
+            background-color: #ffffff !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .dark.modo-cartelera header,
+        .dark.vista-solida header {
+            background-color: rgba(15, 23, 42, 0.96) !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
         }
 
@@ -62,6 +83,12 @@
             line-height: 2.5rem !important;
             margin: 0 auto !important;
             cursor: pointer !important;
+            color: #020617 !important;
+        }
+
+        .dark.modo-cartelera #clock-argentina,
+        .dark.vista-solida #clock-argentina {
+            color: #ffffff !important;
         }
     </style>
 </head>

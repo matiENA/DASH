@@ -418,6 +418,38 @@ function desmarcarDropZone(element) {
     element.classList.add('border-slate-500/70');
 }
 
+function resolver(id, nuevoServicio = null) {
+    if (typeof esModoCartelera === 'function' && esModoCartelera()) return;
+    if (typeof vistaActual !== 'undefined' && vistaActual === 'archivo') return;
+    
+    let nov = (typeof RAM_Novedades !== 'undefined' ? RAM_Novedades : []).find(n => String(n.id) === String(id));
+    if (!nov) return;
+    
+    nov.resuelto = true;
+    nov.fecha_resolucion = new Date().toISOString();
+    if (nuevoServicio) {
+        nov.servicio = nuevoServicio;
+    }
+    
+    if (typeof renderizar === 'function') renderizar();
+    
+    const payloadBody = {
+        action: 'resolver',
+        id_novedad: id,
+        payload: {
+            resuelto: true,
+            fecha_resolucion: nov.fecha_resolucion,
+            ...(nuevoServicio ? { servicio: nuevoServicio } : {})
+        }
+    };
+
+    fetch(`${API_URL}/api/dash/novedades`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadBody)
+    }).catch(e => console.error("Error al resolver novedad:", e));
+}
+
 function ejecutarDropServicio(e, servicio) {
     if (e) {
         e.preventDefault();
