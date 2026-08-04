@@ -443,7 +443,7 @@ function resolver(id, nuevoServicio = null) {
         }
     };
 
-    fetch(`${API_URL}/api/dash/novedades`, {
+    fetch(`${API_URL}/api/novedades/actualizar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadBody)
