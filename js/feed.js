@@ -189,7 +189,8 @@ function obtenerListaCertificacionesUnidad() {
 
     if (!Array.isArray(vencList) || vencList.length === 0) return [];
 
-    let resultado = [];
+    // Mapa para asegurar que cada tractor aparezca solo una vez con su vencimiento MÁS URGENTE
+    let tractorMasUrgenteMap = {};
 
     vencList.forEach(item => {
         const tractor = (item.col_b || '').trim().toUpperCase();
@@ -213,19 +214,26 @@ function obtenerListaCertificacionesUnidad() {
             const est = obtenerEstadoVencimiento(c.val);
             // OBVIAR LOS QUE ESTÁN EN REGLA (> 7 DÍAS). SOLO RENDERIZAR VENCIDOS Y A 1 SEMANA
             if (est.estado === 'VENCIDO' || est.estado === 'SEMANA') {
-                resultado.push({
+                const candidato = {
                     tractor,
                     label: c.label,
                     fecha: c.val,
                     chofer: choferNom,
                     estado: est.estado,
                     dias: est.dias
-                });
+                };
+
+                // Si el tractor no está registrado aún o el nuevo vencimiento es más urgente (menor número de días)
+                if (!tractorMasUrgenteMap[tractor] || candidato.dias < tractorMasUrgenteMap[tractor].dias) {
+                    tractorMasUrgenteMap[tractor] = candidato;
+                }
             }
         });
     });
 
-    // Ordenar por urgencia (vencidos primero, luego más próximos)
+    const resultado = Object.values(tractorMasUrgenteMap);
+
+    // Ordenar la lista final por urgencia (vencidos primero, luego más próximos)
     resultado.sort((a, b) => a.dias - b.dias);
     return resultado;
 }
