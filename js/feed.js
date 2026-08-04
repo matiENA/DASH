@@ -843,7 +843,9 @@ function generarHtmlCard(n) {
     }
 
     let tractorFinal = (infoFlota && infoFlota.tractor) ? infoFlota.tractor : (n.tractor || '');
-    let srvFinal = (infoFlota && infoFlota.servicio) ? infoFlota.servicio : (n.srv || 'S/A');
+    let srvFinal = n.servicio ? n.servicio : ((infoFlota && infoFlota.servicio) ? infoFlota.servicio : (n.srv || 'S/A'));
+    if (srvFinal === 'DOCK SUD') srvFinal = 'EURO';
+    if (srvFinal === 'UTE') srvFinal = 'LIVIANO';
     let uteRaw = (infoFlota && infoFlota.n_ute) ? infoFlota.n_ute : (n.n_ute || '');
     let uteBadge = (uteRaw && uteRaw !== 'S/D') ? uteRaw : '';
 
