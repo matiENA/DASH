@@ -628,14 +628,48 @@ function restablecerAnchoSeccion(catKey, event) {
 
         const esCartelera = typeof esModoCartelera === 'function' && esModoCartelera();
 
-        if (key === 'CERTIFICACION_UNIDAD' && subVistaCertificaciones === 'lista' && !esCartelera) {
-            const listaVenc = (typeof obtenerListaCertificacionesUnidad === 'function') ? obtenerListaCertificacionesUnidad() : [];
+        let renderizarListaVenc = false;
+        let filtrarSoloConChofer = false;
+        let ocultarBotonEditar = false;
+
+        if (key === 'CERTIFICACION_UNIDAD') {
+            if (esCartelera) {
+                // En Vista Cartelera: si no hay cards de novedades activas, mostrar la lista predeterminada
+                if (cat.items.length === 0) {
+                    renderizarListaVenc = true;
+                    filtrarSoloConChofer = true; // Solo unidades en circulación (con chofer nom asignado)
+                    ocultarBotonEditar = true;    // Sin icono de edición/crear nota
+                }
+            } else {
+                // En Vista Normal: se rige por subVistaCertificaciones ('lista' vs 'cards')
+                if (subVistaCertificaciones === 'lista') {
+                    renderizarListaVenc = true;
+                    filtrarSoloConChofer = false;
+                    ocultarBotonEditar = false;
+                }
+            }
+        }
+
+        if (renderizarListaVenc) {
+            let listaVenc = (typeof obtenerListaCertificacionesUnidad === 'function') ? obtenerListaCertificacionesUnidad() : [];
+            
+            // Aplicar filtro si se requiere solo chofer asignado/activo en circulación
+            if (filtrarSoloConChofer) {
+                listaVenc = listaVenc.filter(v => v.chofer && v.chofer !== '-' && v.chofer.trim().length > 0);
+            }
+
             if (listaVenc.length === 0) {
-                htmlFinal += `<div id="${carouselId}" class="${columnClass} justify-center items-center"><span class="text-slate-400 text-xs font-bold opacity-70">Sin vencimientos a 1 semana ni vencidos</span></div>`;
+                htmlFinal += `<div id="${carouselId}" class="${columnClass} justify-center items-center"><span class="text-slate-400 text-xs font-bold opacity-70">Sin vencimientos en circulación</span></div>`;
             } else {
                 htmlFinal += `<div id="${carouselId}" class="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">`;
                 listaVenc.forEach(v => {
                     const colorFecha = v.estado === 'VENCIDO' ? 'text-red-500 font-extrabold' : 'text-amber-400 font-extrabold';
+                    
+                    const btnEditHtml = ocultarBotonEditar ? '' : `
+                    <button onclick="gestionarNovedadVencimiento('${(v.chofer || '').replace(/'/g, "\\'")}', '${v.tractor}', '${v.label}', event)" class="btn-card-edit w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-800 hover:text-indigo-400 text-slate-400 cursor-pointer active:scale-95 ml-1" title="Modificar o crear novedad para ${v.label}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>`;
+
                     htmlFinal += `
                     <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-slate-900/90 border border-slate-800/80 hover:bg-slate-800/90 transition-colors gap-2 shrink-0">
                         <div class="flex items-center gap-2 truncate flex-1 min-w-0">
@@ -644,9 +678,7 @@ function restablecerAnchoSeccion(catKey, event) {
                             <span class="${colorFecha} text-[11px] shrink-0">${v.fecha}</span>
                             <span class="text-slate-300 font-bold truncate text-[11px] flex-1 min-w-0">${v.chofer || '-'}</span>
                         </div>
-                        <button onclick="gestionarNovedadVencimiento('${(v.chofer || '').replace(/'/g, "\\'")}', '${v.tractor}', '${v.label}', event)" class="btn-card-edit w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-800 hover:text-indigo-400 text-slate-400 cursor-pointer active:scale-95 ml-1" title="Modificar o crear novedad para ${v.label}">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
+                        ${btnEditHtml}
                     </div>`;
                 });
                 htmlFinal += `</div>`;
