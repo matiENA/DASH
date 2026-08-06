@@ -82,6 +82,8 @@
             font-size: 2.25rem !important;
             line-height: 2.5rem !important;
             margin: 0 auto !important;
+            position: static !important;
+            transform: none !important;
             cursor: pointer !important;
             color: #020617 !important;
         }
@@ -96,34 +98,22 @@
 
     <!-- HEADER CON DISEÑO GLASSMORPHISM -->
     <header class="glass-header bg-white/85 dark:bg-slate-900/85 px-4 sm:px-8 py-3 shadow-sm z-50 shrink-0 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-300 sticky top-0">
-        <div class="flex flex-wrap md:flex-nowrap justify-between items-center w-full gap-4 mx-auto">
-            <!-- IZQUIERDA: LOGO & TÍTULO -->
-            <div class="flex items-center gap-3 shrink-0">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 font-black text-lg">
-                </div>
-                <div>
-                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                        Logística<span class="bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">EOR</span>
-                    </h1>
-                    <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Alertas & Operaciones en Tiempo Real</p>
-                </div>
-            </div>
-            
-            <!-- CENTRO: SELECTOR DE VISTA (4 TABS) -->
-            <div class="flex bg-slate-200/60 dark:bg-slate-900/90 p-1 rounded-xl shadow-inner w-full md:w-auto border border-slate-300/40 dark:border-slate-800/80 shrink-0 justify-center gap-0.5">
+        <div class="relative flex flex-wrap md:flex-nowrap justify-between items-center w-full gap-4 mx-auto">
+            <!-- IZQUIERDA: SELECTOR DE VISTA (4 TABS) -->
+            <div class="flex bg-slate-200/60 dark:bg-slate-900/90 p-1 rounded-xl shadow-inner w-full md:w-auto border border-slate-300/40 dark:border-slate-800/80 shrink-0 justify-center gap-0.5 z-10">
                 <button onclick="cambiarVista('todas')" id="btn-todas" class="flex-1 px-4 py-1.5 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-lg shadow-sm transition-all duration-200 text-center whitespace-nowrap">Todas</button>
                 <button onclick="cambiarVista('archivo')" id="btn-archivo" class="flex-1 px-4 py-1.5 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 text-center whitespace-nowrap">Archivo</button>
                 <button onclick="cambiarVista('mis_novedades')" id="btn-mis_novedades" class="flex-1 px-4 py-1.5 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 text-center whitespace-nowrap">Mis Novedades</button>
                 <button onclick="cambiarVista('menciones')" id="btn-menciones" class="flex-1 px-4 py-1.5 text-slate-500 dark:text-slate-400 font-bold text-xs hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200 text-center whitespace-nowrap">@</button>
             </div>
 
-            <!-- RELOJ DIGITAL ARGENTINA (24H - ROBOTO MONO BOLD) -->
-            <div id="clock-argentina" onclick="if(typeof esModoCartelera === 'function' && esModoCartelera()) toggleCartelera()" class="px-4 py-1 font-mono font-extrabold text-2xl sm:text-3xl tracking-wider text-slate-900 dark:text-white shrink-0 select-none drop-shadow-sm flex items-center justify-center transition-transform active:scale-95 cursor-pointer" style="font-family: 'Roboto Mono', monospace; font-weight: 700;" title="Reloj Argentina 24h (En Modo Cartelera: Clic para salir)">
+            <!-- CENTRO: RELOJ DIGITAL ARGENTINA (24H - ROBOTO MONO BOLD) -->
+            <div id="clock-argentina" onclick="if(typeof esModoCartelera === 'function' && esModoCartelera()) toggleCartelera()" class="md:absolute md:left-1/2 md:-translate-x-1/2 px-4 py-1 font-mono font-extrabold text-2xl sm:text-3xl tracking-wider text-slate-900 dark:text-white shrink-0 select-none drop-shadow-sm flex items-center justify-center transition-transform active:scale-95 cursor-pointer z-10" style="font-family: 'Roboto Mono', monospace; font-weight: 700;" title="Reloj Argentina 24h (En Modo Cartelera: Clic para salir)">
                 --:--
             </div>
 
             <!-- DERECHA: ACCIONES & USUARIO -->
-            <div class="flex items-center gap-2.5 shrink-0">
+            <div class="flex items-center gap-2.5 shrink-0 ml-auto z-10">
                 <!-- SWITCH CARTELERA -->
                 <button onclick="toggleCartelera()" id="btn-cartelera" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all border border-slate-200/60 dark:border-slate-700/60 active:scale-95 shadow-sm text-xs font-extrabold flex items-center gap-1.5 cursor-pointer" title="Alternar Modo Cartelera (Deshabilita toda edición)">
                     <span id="dot-cartelera" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
