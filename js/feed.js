@@ -1227,6 +1227,17 @@ const CONFIG_TERMINALES_FEED = {
 function obtenerHtmlButtonTerminal(n) {
     const term = (n.terminal || '').toUpperCase().trim();
     const cfg = CONFIG_TERMINALES_FEED[term];
+    const esCartelera = typeof esModoCartelera === 'function' && esModoCartelera();
+
+    if (esCartelera) {
+        if (!term || !cfg) {
+            return '';
+        }
+        return `
+        <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide flex items-center gap-1 shadow-xs select-none" style="background-color: ${cfg.bg}; color: ${cfg.text};" title="Terminal: ${term}">
+            <span>${term}</span>
+        </span>`;
+    }
 
     if (!term || !cfg) {
         return `
