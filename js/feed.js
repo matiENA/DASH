@@ -494,17 +494,6 @@ function esMenorA24Horas(isoStr) {
     return (new Date() - new Date(isoStr)) < (24 * 60 * 60 * 1000);
 }
 
-function renderizar() {
-    const container = document.getElementById('feed-container');
-    if (!container) return;
-    
-    autoScrollIntervals.forEach(clearInterval);
-    autoScrollIntervals = [];
-
-    const sesion = (typeof obtenerUsuarioSesion === 'function') ? obtenerUsuarioSesion() : null;
-    const usuarioActual = sesion && sesion.usuario ? sesion.usuario.toUpperCase() : '';
-    
-    const activas = RAM_Novedades.filter(n => !n.resuelto).sort((a, b) => b.id - a.id);
 function restablecerAnchoSeccion(catKey, event) {
     if (event) event.stopPropagation();
     try {
@@ -517,6 +506,18 @@ function restablecerAnchoSeccion(catKey, event) {
     } catch(e) {}
     renderizar();
 }
+
+function renderizar() {
+    const container = document.getElementById('feed-container');
+    if (!container) return;
+    
+    autoScrollIntervals.forEach(clearInterval);
+    autoScrollIntervals = [];
+
+    const sesion = (typeof obtenerUsuarioSesion === 'function') ? obtenerUsuarioSesion() : null;
+    const usuarioActual = sesion && sesion.usuario ? sesion.usuario.toUpperCase() : '';
+    
+    const activas = RAM_Novedades.filter(n => !n.resuelto).sort((a, b) => b.id - a.id);
 
     const resueltasTodas = RAM_Novedades.filter(n => n.resuelto).sort((a, b) => b.id - a.id);
     const gridViewClass = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full h-full min-h-0 overflow-y-auto custom-scrollbar p-1 items-start content-start flex-1";
@@ -708,7 +709,7 @@ function restablecerAnchoSeccion(catKey, event) {
         if (index < visibleKeys.length - 1) {
             const nextKey = visibleKeys[index + 1];
             htmlFinal += `
-            <div onmousedown="iniciarResizingColumna(event, '${key}', '${nextKey}')" ontouchstart="iniciarResizingColumna(event, '${key}', '${nextKey}')" class="col-splitter w-2.5 h-full cursor-col-resize shrink-0 flex items-center justify-center group z-20 hover:bg-indigo-500/20 active:bg-indigo-500/40 transition-colors rounded-full -mx-1" title="Arrastrar para ajustar proporción de columnas">
+            <div onmousedown="iniciarResizingColumna(event, '${key}', '${nextKey}')" data-left="${key}" data-right="${nextKey}" class="col-splitter w-2.5 h-full cursor-col-resize shrink-0 flex items-center justify-center group z-20 hover:bg-indigo-500/20 active:bg-indigo-500/40 transition-colors rounded-full -mx-1" title="Arrastrar para ajustar proporción de columnas">
                 <div class="w-0.5 h-8 bg-slate-400/40 group-hover:bg-indigo-400 rounded-full transition-colors"></div>
             </div>`;
         }
@@ -717,6 +718,13 @@ function restablecerAnchoSeccion(catKey, event) {
     htmlFinal += `</div>`;
 
     container.innerHTML = htmlFinal;
+
+    // Vincular event listeners pasivos de touchstart para los splitters evitando violaciones de consola
+    container.querySelectorAll('.col-splitter').forEach(splitter => {
+        const lKey = splitter.getAttribute('data-left');
+        const rKey = splitter.getAttribute('data-right');
+        splitter.addEventListener('touchstart', (e) => iniciarResizingColumna(e, lKey, rKey), { passive: true });
+    });
 
     setTimeout(() => {
         idsCarruseles.forEach(id => inicializarAutoScroll(id));
@@ -728,17 +736,41 @@ function inicializarAutoScroll(containerId) {
     if (!track) return;
 
     let isPaused = false;
-    let currentIndex = 0;
-    const PAUSE_MS = 3000; // Pausa de 3 segundos por cada tarjeta
+    let lastPauseTime = 0;
+    let touchPauseTimeout = null;
 
-    track.addEventListener('mouseenter', () => isPaused = true);
-    track.addEventListener('mouseleave', () => isPaused = false);
-    track.addEventListener('touchstart', () => isPaused = true, {passive: true});
+    const pause = () => {
+        isPaused = true;
+        lastPauseTime = Date.now();
+    };
+
+    const resume = () => {
+        isPaused = false;
+    };
+
+    track.addEventListener('mouseenter', pause);
+    track.addEventListener('mouseleave', resume);
+    
+    track.addEventListener('touchstart', () => {
+        pause();
+        if (touchPauseTimeout) clearTimeout(touchPauseTimeout);
+    }, { passive: true });
+
     track.addEventListener('touchend', () => {
-        setTimeout(() => isPaused = false, 2000);
-    }, {passive: true});
+        if (touchPauseTimeout) clearTimeout(touchPauseTimeout);
+        touchPauseTimeout = setTimeout(resume, 3000);
+    }, { passive: true });
+
+    track.addEventListener('touchcancel', resume, { passive: true });
+
+    const PAUSE_MS = 3000;
 
     const interval = setInterval(() => {
+        // Guardián de seguridad: auto-recuperar si quedó pausado por más de 8 segundos sin interacción activa
+        if (isPaused && (Date.now() - lastPauseTime > 8000)) {
+            isPaused = false;
+        }
+
         if (isPaused) return;
 
         const cards = Array.from(track.querySelectorAll('article'));
@@ -747,9 +779,8 @@ function inicializarAutoScroll(containerId) {
         let isHorizontal = track.classList.contains('overflow-x-auto');
 
         if (isHorizontal) {
-            if (track.scrollWidth <= track.clientWidth) return;
+            if (track.scrollWidth <= (track.clientWidth + 5)) return;
 
-            // Encontrar la tarjeta más cercana al scroll actual
             const currentScroll = track.scrollLeft;
             let closestIndex = 0;
             let minDiff = Infinity;
@@ -761,18 +792,18 @@ function inicializarAutoScroll(containerId) {
                 }
             });
 
-            currentIndex = closestIndex + 1;
-            if (currentIndex >= cards.length) {
-                currentIndex = 0;
+            let nextIndex = closestIndex + 1;
+            if (nextIndex >= cards.length || (currentScroll + track.clientWidth >= track.scrollWidth - 10)) {
+                nextIndex = 0;
             }
 
-            const targetCard = cards[currentIndex];
+            const targetCard = cards[nextIndex];
             if (targetCard) {
                 const targetLeft = targetCard.offsetLeft - track.offsetLeft;
                 track.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
             }
         } else {
-            if (track.scrollHeight <= track.clientHeight) return;
+            if (track.scrollHeight <= (track.clientHeight + 5)) return;
 
             const currentScroll = track.scrollTop;
             let closestIndex = 0;
@@ -785,12 +816,12 @@ function inicializarAutoScroll(containerId) {
                 }
             });
 
-            currentIndex = closestIndex + 1;
-            if (currentIndex >= cards.length) {
-                currentIndex = 0;
+            let nextIndex = closestIndex + 1;
+            if (nextIndex >= cards.length || (currentScroll + track.clientHeight >= track.scrollHeight - 10)) {
+                nextIndex = 0;
             }
 
-            const targetCard = cards[currentIndex];
+            const targetCard = cards[nextIndex];
             if (targetCard) {
                 const targetTop = targetCard.offsetTop - track.offsetTop;
                 track.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
