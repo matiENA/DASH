@@ -891,17 +891,29 @@ function copiarPatente(texto, event) {
     });
 }
 
+function normalizarTexto(n) {
+    if (!n) return '';
+    return String(n)
+        .trim()
+        .toLowerCase()
+        .replace(/ñ/g, '__N_TILDE__')
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/__n_tilde__/g, 'ñ')
+        .replace(/\s+/g, ' ');
+}
+
 function generarHtmlCard(n) {
     let timeFormatted = formatearTimestamp(n.timestamp, n.id);
     
-    let normNom = (n.nom || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
+    let normNom = normalizarTexto(n.nom);
     let infoFlota = null;
     
     if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
         if (RAM_Flota.flota && RAM_Flota.flota[normNom]) {
             infoFlota = RAM_Flota.flota[normNom];
         } else if (Array.isArray(RAM_Flota)) {
-            infoFlota = RAM_Flota.find(c => String(c.nom || c.nombre || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ') === normNom);
+            infoFlota = RAM_Flota.find(c => normalizarTexto(c.nom || c.nombre) === normNom);
         }
     }
 
@@ -1112,14 +1124,14 @@ function filtrarQuickChoferes() {
     const drop = document.getElementById('quick-dropdown-choferes');
     if (!drop || !input) return;
 
-    const val = input.value.toLowerCase().trim();
+    const val = normalizarTexto(input.value);
     const lista = obtenerListaFlotaArray();
 
     let filtrados = lista;
     if (val.length > 0) {
         filtrados = lista.filter(c => 
-            (c.nom && c.nom.toLowerCase().includes(val)) || 
-            (c.tractor && c.tractor.toLowerCase().includes(val))
+            (c.nom && normalizarTexto(c.nom).includes(val)) || 
+            (c.tractor && normalizarTexto(c.tractor).includes(val))
         );
     }
 
