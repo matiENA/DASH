@@ -67,26 +67,18 @@ function obtenerVencimientosTarjeta(tractorPatente, choferNom) {
     const normTractor = (tractorPatente || '').trim().toUpperCase();
     if (!normTractor) return [];
 
-    // Buscar coincidencia por col_b (TRACTOR)
-    const match = vencList.find(v => (v.col_b || '').trim().toUpperCase() === normTractor);
+    // Buscar coincidencia por patente / col_b
+    const match = vencList.find(v => (v.patente || v.col_b || v.tractor || v.TRACTOR || '').trim().toUpperCase() === normTractor);
     if (!match) return [];
 
-    // Mapeo solicitado:
-    // col_g: MASS TR -> MAS T
-    // col_h: VTV TR -> VTV T
-    // col_j: MAS SEMI -> MAS S
-    // col_k: VTV SEMI -> VTV S
-    // col_l: Esp-Es
-    // col_m: VI
-    // col_n: VE
     const campos = [
-        { label: 'MAS T', val: match.col_g },
-        { label: 'VTV T', val: match.col_h },
-        { label: 'MAS S', val: match.col_j },
-        { label: 'VTV S', val: match.col_k },
-        { label: 'Esp-Es', val: match.col_l },
-        { label: 'VI', val: match.col_m },
-        { label: 'VE', val: match.col_n }
+        { label: 'MAS T', val: match.mas || match.col_g },
+        { label: 'VTV T', val: match.vtv || match.col_h },
+        { label: 'MAS S', val: match.mas_semi || match.col_j },
+        { label: 'VTV S', val: match.vtv_semi || match.col_k },
+        { label: 'Esp-Es', val: match.esp_es || match.col_l },
+        { label: 'VI', val: match.vi || match.col_m },
+        { label: 'VE', val: match.ve || match.col_n }
     ];
 
     return campos.filter(c => c.val && String(c.val).trim() !== '-' && String(c.val).trim() !== 'S/D').map(c => {
@@ -193,19 +185,19 @@ function obtenerListaCertificacionesUnidad() {
     let tractorMasUrgenteMap = {};
 
     vencList.forEach(item => {
-        const tractor = (item.col_b || '').trim().toUpperCase();
+        const tractor = (item.patente || item.col_b || item.tractor || item.TRACTOR || '').trim().toUpperCase();
         if (!tractor) return;
 
         const choferNom = obtenerNombreChoferPorTractor(tractor);
 
         const campos = [
-            { label: 'MAS T', val: item.col_g },
-            { label: 'VTV T', val: item.col_h },
-            { label: 'MAS S', val: item.col_j },
-            { label: 'VTV S', val: item.col_k },
-            { label: 'Esp-Es', val: item.col_l },
-            { label: 'VI', val: item.col_m },
-            { label: 'VE', val: item.col_n }
+            { label: 'MAS T', val: item.mas || item.col_g },
+            { label: 'VTV T', val: item.vtv || item.col_h },
+            { label: 'MAS S', val: item.mas_semi || item.col_j },
+            { label: 'VTV S', val: item.vtv_semi || item.col_k },
+            { label: 'Esp-Es', val: item.esp_es || item.col_l },
+            { label: 'VI', val: item.vi || item.col_m },
+            { label: 'VE', val: item.ve || item.col_n }
         ];
 
         campos.forEach(c => {
@@ -608,7 +600,19 @@ function renderizar() {
     // RENDERIZAR COLUMNAS KANBAN PROPORCIONALES (CONTENIDAS 100% EN PANTALLA)
     htmlFinal += `<div id="kanban-columns-wrapper" class="flex gap-2 md:gap-3 w-full h-full min-h-0 flex-1 overflow-hidden items-stretch">`;
     
-    const visibleKeys = Object.keys(categorias).filter(k => k !== 'LIBRES' && (k === 'CERTIFICACION_UNIDAD' || categorias[k].items.length > 0));
+    const esCartelera = typeof esModoCartelera === 'function' && esModoCartelera();
+    const listaVenc = (typeof obtenerListaCertificacionesUnidad === 'function') ? obtenerListaCertificacionesUnidad() : [];
+
+    const visibleKeys = Object.keys(categorias).filter(k => {
+        if (k === 'LIBRES') return false;
+        if (k === 'CERTIFICACION_UNIDAD') {
+            if (esCartelera) {
+                return categorias[k].items.length > 0 || listaVenc.length > 0;
+            }
+            return true;
+        }
+        return categorias[k].items.length > 0;
+    });
     const pesosGuardados = obtenerPesosColumnasGuardados();
 
     visibleKeys.forEach((key, index) => {
