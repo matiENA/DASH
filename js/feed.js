@@ -638,7 +638,7 @@ function renderizar() {
                 // En Vista Cartelera: si no hay cards de novedades activas, mostrar la lista predeterminada
                 if (cat.items.length === 0) {
                     renderizarListaVenc = true;
-                    filtrarSoloConChofer = true; // Solo unidades en circulación (con chofer nom asignado)
+                    filtrarSoloConChofer = false; // Deshabilitado el filtro de solo chofer/en circulación
                     ocultarBotonEditar = true;    // Sin icono de edición/crear nota
                 }
             } else {
@@ -660,7 +660,7 @@ function renderizar() {
             }
 
             if (listaVenc.length === 0) {
-                htmlFinal += `<div id="${carouselId}" class="${columnClass} justify-center items-center"><span class="text-slate-400 text-xs font-bold opacity-70">Sin vencimientos en circulación</span></div>`;
+                htmlFinal += `<div id="${carouselId}" class="${columnClass} justify-center items-center"><span class="text-slate-400 text-xs font-bold opacity-70">Sin vencimientos a 1 semana ni vencidos</span></div>`;
             } else {
                 htmlFinal += `<div id="${carouselId}" class="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">`;
                 listaVenc.forEach(v => {
