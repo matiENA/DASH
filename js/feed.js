@@ -169,18 +169,51 @@ function obtenerNombreChoferPorTractor(tractorPatente) {
     return '-';
 }
 
-function getFechas3DiasArgentina() {
-    const hoyAr = (typeof getFechaArgentina === 'function') ? getFechaArgentina() : new Date();
+const MESES_ABREV = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+
+function getFechas3DiasObjetos() {
+    let hoyAr = (typeof getFechaArgentina === 'function') ? getFechaArgentina() : new Date();
     const ayerAr = new Date(hoyAr);
     ayerAr.setDate(ayerAr.getDate() - 1);
     const mananaAr = new Date(hoyAr);
     mananaAr.setDate(mananaAr.getDate() + 1);
 
     return {
-        isoAyer: ayerAr.toISOString().split('T')[0],
-        isoHoy: hoyAr.toISOString().split('T')[0],
-        isoManana: mananaAr.toISOString().split('T')[0]
+        ayerObj: ayerAr,
+        hoyObj: hoyAr,
+        mananaObj: mananaAr
     };
+}
+
+function obtenerCodigoDiaChofer(ch, dateObj) {
+    if (!ch) return '-';
+
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    const isoKey = `${yyyy}-${mm}-${dd}`;
+
+    // 1. Buscar en _diasIso (diccionario de fechas ISO 'YYYY-MM-DD')
+    if (ch._diasIso && typeof ch._diasIso === 'object' && ch._diasIso[isoKey] !== undefined) {
+        return ch._diasIso[isoKey];
+    }
+
+    // 2. Fallback: Buscar en ch.dias (por hoja de mes, ej: "AGO-26")
+    if (ch.dias && typeof ch.dias === 'object') {
+        const mesAbrev = MESES_ABREV[dateObj.getMonth()];
+        const anio2 = String(yyyy).slice(-2);
+        const hojaKey = `${mesAbrev}-${anio2}`;
+
+        if (ch.dias[hojaKey]) {
+            const arrDias = String(ch.dias[hojaKey]).split(',');
+            const dayNum = dateObj.getDate();
+            if (arrDias[dayNum - 1] !== undefined) {
+                return arrDias[dayNum - 1];
+            }
+        }
+    }
+
+    return '-';
 }
 
 function coincidePatronRenderizado(codeAyer, codeHoy) {
@@ -551,6 +584,7 @@ function renderizar() {
 
     const categorias = {
         'LIBRES': { titulo: 'LIBRES', colorText: 'text-cyan-600 dark:text-cyan-400', borderColor: 'border-cyan-400', items: [] },
+        'VUELVE': { titulo: 'VUELVE', colorText: 'text-amber-400', borderColor: 'border-amber-400', items: [] },
         'BAJA_DIAGRAMA': { titulo: 'BAJA / TÉRMINO DE DIAGRAMA', colorText: 'text-red-500', borderColor: 'border-red-500', items: [] },
         'REPARACION': { titulo: 'REPARACIONES REQUERIDAS', colorText: 'text-indigo-500', borderColor: 'border-indigo-500', items: [] },
         'CERTIFICACION_UNIDAD': { titulo: 'CERTIFICACIONES DE UNIDAD', colorText: 'text-orange-400', borderColor: 'border-orange-300', items: [] },
@@ -591,10 +625,8 @@ function renderizar() {
     htmlFinal += `</div></div></section>`;
 
     // RENDERIZAR COLUMNAS KANBAN PROPORCIONALES (CONTENIDAS 100% EN PANTALLA)
-    htmlFinal += `<div id="kanban-columns-wrapper" class="flex gap-2 md:gap-3 w-full h-full min-h-0 flex-1 overflow-hidden items-stretch">`;
-    
-    const esCartelera = typeof esModoCartelera === 'function' && esModoCartelera();
-    const { isoAyer, isoHoy, isoManana } = getFechas3DiasArgentina();
+    htmlFinal += `<div id="kanban-columns-wrapper" class="flex gap-2 md:gap-3 w-full h-full min-h-0 flex-1 overflow-hidden items-stretch">`;    const esCartelera = typeof esModoCartelera === 'function' && esModoCartelera();
+    const { ayerObj, hoyObj, mananaObj } = getFechas3DiasObjetos();
 
     let listaFlotaDiagramas = [];
     if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
@@ -608,23 +640,23 @@ function renderizar() {
                 return {
                     nom: key.toUpperCase(),
                     tractor: item.tractor || '',
-                    _diasIso: item._diasIso || item.diasIso || {}
+                    _diasIso: item._diasIso || item.diasIso || {},
+                    dias: item.dias || {}
                 };
             });
         }
     }
 
     const choferes3Dias = listaFlotaDiagramas.filter(ch => {
-        const diasIso = ch._diasIso || {};
-        const cAyer = diasIso[isoAyer] || '-';
-        const cHoy = diasIso[isoHoy] || '-';
+        const cAyer = obtenerCodigoDiaChofer(ch, ayerObj);
+        const cHoy = obtenerCodigoDiaChofer(ch, hoyObj);
         return coincidePatronRenderizado(cAyer, cHoy);
     });
 
     const visibleKeys = Object.keys(categorias).filter(k => {
         if (k === 'LIBRES') return false;
-        if (k === 'CERTIFICACION_UNIDAD') {
-            return categorias[k].items.length > 0 || choferes3Dias.length > 0;
+        if (k === 'VUELVE') {
+            return choferes3Dias.length > 0;
         }
         return categorias[k].items.length > 0;
     });
@@ -646,47 +678,41 @@ function renderizar() {
                 </h2>
             </div>`;
 
-        if (key === 'CERTIFICACION_UNIDAD' && cat.items.length === 0) {
-            if (choferes3Dias.length === 0) {
-                htmlFinal += `<div id="${carouselId}" class="${columnClass} justify-center items-center"><span class="text-slate-400 text-xs font-bold opacity-70">Sin choferes en patrón actual</span></div>`;
-            } else {
-                const numCols = visibleKeys.length;
-                const gapClass = numCols >= 6 ? 'gap-[15px]' : 'gap-[5px]';
+        if (key === 'VUELVE') {
+            const numCols = visibleKeys.length;
+            const gapClass = numCols >= 6 ? 'gap-[15px]' : 'gap-[5px]';
 
-                htmlFinal += `<div id="${carouselId}" class="flex flex-col ${gapClass} overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">`;
-                
-                // Header 3 Días
+            htmlFinal += `<div id="${carouselId}" class="flex flex-col ${gapClass} overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">`;
+            
+            // Header 3 Días
+            htmlFinal += `
+            <div class="flex items-center justify-between px-2 py-1 mb-1 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
+                <span class="flex-1 truncate pr-1">Conductor</span>
+                <div class="flex items-center ${gapClass} shrink-0 text-center">
+                    <span class="w-7 sm:w-8">Ayer</span>
+                    <span class="w-7 sm:w-8 text-amber-400 font-extrabold">Hoy</span>
+                    <span class="w-7 sm:w-8">Mañana</span>
+                </div>
+            </div>`;
+
+            choferes3Dias.forEach(ch => {
+                const cAyer = obtenerCodigoDiaChofer(ch, ayerObj);
+                const cHoy = obtenerCodigoDiaChofer(ch, hoyObj);
+                const cManana = obtenerCodigoDiaChofer(ch, mananaObj);
+
                 htmlFinal += `
-                <div class="flex items-center justify-between px-2 py-1 mb-1 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
-                    <span class="flex-1 truncate pr-1">Conductor / Unidad</span>
-                    <div class="flex items-center ${gapClass} shrink-0 text-center">
-                        <span class="w-7 sm:w-8">Ayer</span>
-                        <span class="w-7 sm:w-8 text-amber-400 font-extrabold">Hoy</span>
-                        <span class="w-7 sm:w-8">Mañana</span>
+                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 ${gapClass} shrink-0">
+                    <div class="flex items-center truncate flex-1 min-w-0 pr-1">
+                        <span class="font-black text-xs text-slate-900 dark:text-slate-100 truncate">${ch.nom}</span>
+                    </div>
+                    <div class="flex items-center ${gapClass} shrink-0">
+                        ${obtenerInsigniaEstadoHtml(cAyer)}
+                        ${obtenerInsigniaEstadoHtml(cHoy)}
+                        ${obtenerInsigniaEstadoHtml(cManana)}
                     </div>
                 </div>`;
-
-                choferes3Dias.forEach(ch => {
-                    const diasIso = ch._diasIso || {};
-                    const cAyer = diasIso[isoAyer] || '-';
-                    const cHoy = diasIso[isoHoy] || '-';
-                    const cManana = diasIso[isoManana] || '-';
-
-                    htmlFinal += `
-                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 ${gapClass} shrink-0">
-                        <div class="flex flex-col truncate flex-1 min-w-0">
-                            <span class="font-black text-xs text-slate-900 dark:text-slate-100 truncate">${ch.nom}</span>
-                            <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 tracking-wide">${ch.tractor || 'S/D'}</span>
-                        </div>
-                        <div class="flex items-center ${gapClass} shrink-0">
-                            ${obtenerInsigniaEstadoHtml(cAyer)}
-                            ${obtenerInsigniaEstadoHtml(cHoy)}
-                            ${obtenerInsigniaEstadoHtml(cManana)}
-                        </div>
-                    </div>`;
-                });
-                htmlFinal += `</div>`;
-            }
+            });
+            htmlFinal += `</div>`;
         } else {
             htmlFinal += `<div id="${carouselId}" class="${columnClass}">`;
             if (cat.items.length === 0) {
