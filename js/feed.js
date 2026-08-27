@@ -169,65 +169,58 @@ function obtenerNombreChoferPorTractor(tractorPatente) {
     return '-';
 }
 
-function obtenerListaCertificacionesUnidad() {
-    let vencList = [];
-    if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
-        if (RAM_Flota.vencimientosObj && Array.isArray(RAM_Flota.vencimientosObj)) {
-            vencList = RAM_Flota.vencimientosObj;
-        } else if (Array.isArray(RAM_Flota) && RAM_Flota.vencimientosObj) {
-            vencList = RAM_Flota.vencimientosObj;
-        }
+function getFechas3DiasArgentina() {
+    const hoyAr = (typeof getFechaArgentina === 'function') ? getFechaArgentina() : new Date();
+    const ayerAr = new Date(hoyAr);
+    ayerAr.setDate(ayerAr.getDate() - 1);
+    const mananaAr = new Date(hoyAr);
+    mananaAr.setDate(mananaAr.getDate() + 1);
+
+    return {
+        isoAyer: ayerAr.toISOString().split('T')[0],
+        isoHoy: hoyAr.toISOString().split('T')[0],
+        isoManana: mananaAr.toISOString().split('T')[0]
+    };
+}
+
+function coincidePatronRenderizado(codeAyer, codeHoy) {
+    const cAyer = String(codeAyer || '-').trim().toUpperCase();
+    const cHoy = String(codeHoy || '-').trim().toUpperCase();
+
+    // Patrón 1: (F o FSF) en Ayer, y (-) en Hoy
+    const esPatron1 = (cAyer === 'F' || cAyer === 'FSF' || cAyer.includes('FRANCO')) && (cHoy === '-' || cHoy === '');
+
+    // Patrón 2: (V o F) en Ayer, y (1) en Hoy
+    const esPatron2 = (cAyer === 'V' || cAyer === 'F' || cAyer === 'FSF' || cAyer.includes('VIAJE')) && (cHoy === '1');
+
+    return esPatron1 || esPatron2;
+}
+
+function obtenerInsigniaEstadoHtml(code) {
+    const raw = String(code || '-').trim().toUpperCase();
+    
+    let trackingClass = 'tracking-normal';
+    if (raw.length >= 3) trackingClass = 'tracking-tighter';
+    else if (raw.length === 2) trackingClass = 'tracking-tight';
+
+    // 1. Verde: Franco / Franco Sin Franco (F / FSF)
+    if (raw === 'F' || raw === 'FSF' || raw.includes('FRANCO')) {
+        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#22C55E] text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Franco: ${raw}">${raw}</div>`;
     }
 
-    if (!Array.isArray(vencList) || vencList.length === 0) return [];
+    // 2. Amarillo: Viaje Sin Franco (VSF / V)
+    if (raw === 'VSF' || raw === 'V' || raw.includes('VIAJE')) {
+        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EAB308] text-slate-950 flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Viaje: ${raw}">${raw}</div>`;
+    }
 
-    // Mapa para asegurar que cada tractor aparezca solo una vez con su vencimiento MÁS URGENTE
-    let tractorMasUrgenteMap = {};
+    // 3. Rojo: Servicio / Ausente (S / A / 1)
+    if (raw === 'S' || raw === 'A' || raw === '1' || raw.includes('SERVICIO') || raw.includes('AUSENTE')) {
+        const textDisp = (raw === '1') ? 'S' : raw;
+        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EF4444] text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Servicio: ${raw}">${textDisp}</div>`;
+    }
 
-    vencList.forEach(item => {
-        const tractor = (item.patente || item.col_b || item.tractor || item.TRACTOR || '').trim().toUpperCase();
-        if (!tractor) return;
-
-        const choferNom = obtenerNombreChoferPorTractor(tractor);
-
-        const campos = [
-            { label: 'MAS T', val: item.mas || item.col_g },
-            { label: 'VTV T', val: item.vtv || item.col_h },
-            { label: 'MAS S', val: item.mas_semi || item.col_j },
-            { label: 'VTV S', val: item.vtv_semi || item.col_k },
-            { label: 'Esp-Es', val: item.esp_es || item.col_l },
-            { label: 'VI', val: item.vi || item.col_m },
-            { label: 'VE', val: item.ve || item.col_n }
-        ];
-
-        campos.forEach(c => {
-            if (!c.val || String(c.val).trim() === '-' || String(c.val).trim() === 'S/D') return;
-
-            const est = obtenerEstadoVencimiento(c.val);
-            // OBVIAR LOS QUE ESTÁN EN REGLA (> 7 DÍAS). SOLO RENDERIZAR VENCIDOS Y A 1 SEMANA
-            if (est.estado === 'VENCIDO' || est.estado === 'SEMANA') {
-                const candidato = {
-                    tractor,
-                    label: c.label,
-                    fecha: c.val,
-                    chofer: choferNom,
-                    estado: est.estado,
-                    dias: est.dias
-                };
-
-                // Si el tractor no está registrado aún o el nuevo vencimiento es más urgente (menor número de días)
-                if (!tractorMasUrgenteMap[tractor] || candidato.dias < tractorMasUrgenteMap[tractor].dias) {
-                    tractorMasUrgenteMap[tractor] = candidato;
-                }
-            }
-        });
-    });
-
-    const resultado = Object.values(tractorMasUrgenteMap);
-
-    // Ordenar la lista final por urgencia (vencidos primero, luego más próximos)
-    resultado.sort((a, b) => a.dias - b.dias);
-    return resultado;
+    // 4. Modelo Imagen 3: Borde punteado negro con guión '-' centrado (remplaza al '?')
+    return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl border-2 border-dashed border-slate-900 dark:border-slate-100 flex items-center justify-center text-slate-900 dark:text-slate-100 font-black text-xs select-none" title="Sin Estado">-</div>`;
 }
 
 function obtenerPesosColumnasGuardados() {
@@ -601,15 +594,23 @@ function renderizar() {
     htmlFinal += `<div id="kanban-columns-wrapper" class="flex gap-2 md:gap-3 w-full h-full min-h-0 flex-1 overflow-hidden items-stretch">`;
     
     const esCartelera = typeof esModoCartelera === 'function' && esModoCartelera();
-    const listaVenc = (typeof obtenerListaCertificacionesUnidad === 'function') ? obtenerListaCertificacionesUnidad() : [];
+    const { isoAyer, isoHoy, isoManana } = getFechas3DiasArgentina();
+
+    const listaFlotaDiagramas = (typeof RAM_Flota !== 'undefined' && RAM_Flota && Array.isArray(RAM_Flota.diagramas))
+        ? RAM_Flota.diagramas
+        : (Array.isArray(RAM_Flota) ? RAM_Flota : []);
+
+    const choferes3Dias = listaFlotaDiagramas.filter(ch => {
+        const diasIso = ch._diasIso || {};
+        const cAyer = diasIso[isoAyer] || '-';
+        const cHoy = diasIso[isoHoy] || '-';
+        return coincidePatronRenderizado(cAyer, cHoy);
+    });
 
     const visibleKeys = Object.keys(categorias).filter(k => {
         if (k === 'LIBRES') return false;
         if (k === 'CERTIFICACION_UNIDAD') {
-            if (esCartelera) {
-                return categorias[k].items.length > 0 || listaVenc.length > 0;
-            }
-            return true;
+            return categorias[k].items.length > 0 || choferes3Dias.length > 0;
         }
         return categorias[k].items.length > 0;
     });
@@ -631,59 +632,43 @@ function renderizar() {
                 </h2>
             </div>`;
 
-        const esCartelera = typeof esModoCartelera === 'function' && esModoCartelera();
-
-        let renderizarListaVenc = false;
-        let filtrarSoloConChofer = false;
-        let ocultarBotonEditar = false;
-
-        if (key === 'CERTIFICACION_UNIDAD') {
-            if (esCartelera) {
-                // En Vista Cartelera: si no hay cards de novedades activas, mostrar la lista predeterminada
-                if (cat.items.length === 0) {
-                    renderizarListaVenc = true;
-                    filtrarSoloConChofer = false; // Deshabilitado el filtro de solo chofer/en circulación
-                    ocultarBotonEditar = true;    // Sin icono de edición/crear nota
-                }
+        if (key === 'CERTIFICACION_UNIDAD' && cat.items.length === 0) {
+            if (choferes3Dias.length === 0) {
+                htmlFinal += `<div id="${carouselId}" class="${columnClass} justify-center items-center"><span class="text-slate-400 text-xs font-bold opacity-70">Sin choferes en patrón actual</span></div>`;
             } else {
-                // En Vista Normal: se rige por subVistaCertificaciones ('lista' vs 'cards')
-                if (subVistaCertificaciones === 'lista') {
-                    renderizarListaVenc = true;
-                    filtrarSoloConChofer = false;
-                    ocultarBotonEditar = false;
-                }
-            }
-        }
+                const numCols = visibleKeys.length;
+                const gapClass = numCols >= 6 ? 'gap-[15px]' : 'gap-[5px]';
 
-        if (renderizarListaVenc) {
-            let listaVenc = (typeof obtenerListaCertificacionesUnidad === 'function') ? obtenerListaCertificacionesUnidad() : [];
-            
-            // Aplicar filtro si se requiere solo chofer asignado/activo en circulación
-            if (filtrarSoloConChofer) {
-                listaVenc = listaVenc.filter(v => v.chofer && v.chofer !== '-' && v.chofer.trim().length > 0);
-            }
+                htmlFinal += `<div id="${carouselId}" class="flex flex-col ${gapClass} overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">`;
+                
+                // Header 3 Días
+                htmlFinal += `
+                <div class="flex items-center justify-between px-2 py-1 mb-1 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
+                    <span class="flex-1 truncate pr-1">Conductor / Unidad</span>
+                    <div class="flex items-center ${gapClass} shrink-0 text-center">
+                        <span class="w-7 sm:w-8">Ayer</span>
+                        <span class="w-7 sm:w-8 text-amber-400 font-extrabold">Hoy</span>
+                        <span class="w-7 sm:w-8">Mañana</span>
+                    </div>
+                </div>`;
 
-            if (listaVenc.length === 0) {
-                htmlFinal += `<div id="${carouselId}" class="${columnClass} justify-center items-center"><span class="text-slate-400 text-xs font-bold opacity-70">Sin vencimientos a 1 semana ni vencidos</span></div>`;
-            } else {
-                htmlFinal += `<div id="${carouselId}" class="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">`;
-                listaVenc.forEach(v => {
-                    const colorFecha = v.estado === 'VENCIDO' ? 'text-red-500 font-extrabold' : 'text-amber-400 font-extrabold';
-                    
-                    const btnEditHtml = ocultarBotonEditar ? '' : `
-                    <button onclick="gestionarNovedadVencimiento('${(v.chofer || '').replace(/'/g, "\\'")}', '${v.tractor}', '${v.label}', event)" class="btn-card-edit w-7 h-7 rounded-lg border border-transparent shrink-0 transition-all duration-150 focus:outline-none flex items-center justify-center bg-slate-800 hover:text-indigo-400 text-slate-400 cursor-pointer active:scale-95 ml-1" title="Modificar o crear novedad para ${v.label}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    </button>`;
+                choferes3Dias.forEach(ch => {
+                    const diasIso = ch._diasIso || {};
+                    const cAyer = diasIso[isoAyer] || '-';
+                    const cHoy = diasIso[isoHoy] || '-';
+                    const cManana = diasIso[isoManana] || '-';
 
                     htmlFinal += `
-                    <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-slate-900/90 border border-slate-800/80 hover:bg-slate-800/90 transition-colors gap-2 shrink-0">
-                        <div class="flex items-center gap-2 truncate flex-1 min-w-0">
-                            <span class="font-black text-indigo-400 cursor-pointer hover:underline text-[12px] shrink-0" onclick="copiarPatente('${v.tractor}', event)" title="Haz clic para copiar patente">${v.tractor}</span>
-                            <span class="font-black text-slate-100 text-[11px] shrink-0">${v.label}</span>
-                            <span class="${colorFecha} text-[11px] shrink-0">${v.fecha}</span>
-                            <span class="text-slate-300 font-bold truncate text-[11px] flex-1 min-w-0">${v.chofer || '-'}</span>
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 ${gapClass} shrink-0">
+                        <div class="flex flex-col truncate flex-1 min-w-0">
+                            <span class="font-black text-xs text-slate-900 dark:text-slate-100 truncate">${ch.nom}</span>
+                            <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 tracking-wide">${ch.tractor || 'S/D'}</span>
                         </div>
-                        ${btnEditHtml}
+                        <div class="flex items-center ${gapClass} shrink-0">
+                            ${obtenerInsigniaEstadoHtml(cAyer)}
+                            ${obtenerInsigniaEstadoHtml(cHoy)}
+                            ${obtenerInsigniaEstadoHtml(cManana)}
+                        </div>
                     </div>`;
                 });
                 htmlFinal += `</div>`;
@@ -696,15 +681,6 @@ function renderizar() {
                 cat.items.forEach(n => { htmlFinal += generarHtmlCard(n); });
             }
             htmlFinal += `</div>`;
-        }
-
-        // Puntos de conmutación (DOTS ⚪ ⚪) en el pie de CERTIFICACIONES DE UNIDAD (OCULTOS EN CARTELERA)
-        if (key === 'CERTIFICACION_UNIDAD' && !esCartelera) {
-            htmlFinal += `
-            <div class="w-full shrink-0 flex items-center justify-center gap-3 pt-2 border-t border-slate-200/40 dark:border-slate-800/40 mt-auto">
-                <button type="button" onclick="cambiarSubVistaCertificaciones('lista', event)" class="w-3 h-3 rounded-full transition-all cursor-pointer ${subVistaCertificaciones === 'lista' ? 'bg-white scale-125 shadow-md shadow-white/40' : 'bg-slate-600 hover:bg-slate-400'}" title="Ver Lista de Vencimientos (VTV/MASS)"></button>
-                <button type="button" onclick="cambiarSubVistaCertificaciones('cards', event)" class="w-3 h-3 rounded-full transition-all cursor-pointer ${subVistaCertificaciones === 'cards' ? 'bg-white scale-125 shadow-md shadow-white/40' : 'bg-slate-600 hover:bg-slate-400'}" title="Ver Tarjetas de Novedades"></button>
-            </div>`;
         }
 
         htmlFinal += `</section>`;
