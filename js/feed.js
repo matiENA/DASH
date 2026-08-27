@@ -220,21 +220,19 @@ function coincidePatronRenderizado(codeAyer, codeHoy) {
     const cAyer = String(codeAyer || '-').trim().toUpperCase();
     const cHoy = String(codeHoy || '-').trim().toUpperCase();
 
-    // 1. Ayer debe tener un estado reconocido antecedente: F/FSF (verde), V/VSF (amarillo), S/A (rojo) o estado activo
+    // 1. Ayer debe tener estrictamente uno de los caracteres declarados: F/FSF (verde), V/VSF (amarillo), S/A (rojo)
     const esEstadoValidoAyer = (
         cAyer === 'F' || cAyer === 'FSF' || cAyer.includes('FRANCO') ||
         cAyer === 'V' || cAyer === 'VSF' || cAyer.includes('VIAJE') ||
-        cAyer === 'S' || cAyer === 'A' || cAyer.includes('SERVICIO') || cAyer.includes('AUSENTE') ||
-        (cAyer !== '-' && cAyer !== '' && cAyer !== '0')
+        cAyer === 'S' || cAyer === 'A' || cAyer.includes('SERVICIO') || cAyer.includes('AUSENTE')
     );
 
     if (!esEstadoValidoAyer) return false;
 
-    // 2. Hoy debe presentar un quiebre '-' (dash/guión/libre) O un quiebre numérico (1, 2, 3...)
-    const esQuiebreDash = (cHoy === '-' || cHoy === '' || cHoy === '0');
-    const esQuiebreNumerico = /^\d+$/.test(cHoy);
+    // 2. Hoy debe presentar únicamente '-' (libre/dash) O el código '1'
+    const esPatronHoyValido = (cHoy === '-' || cHoy === '' || cHoy === '0' || cHoy === '1');
 
-    return esQuiebreDash || esQuiebreNumerico;
+    return esPatronHoyValido;
 }
 
 function obtenerInsigniaEstadoHtml(code) {
@@ -254,9 +252,9 @@ function obtenerInsigniaEstadoHtml(code) {
         return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EAB308] text-slate-950 flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Viaje: ${raw}">${raw}</div>`;
     }
 
-    // 3. Códigos Numéricos (1, 2, 3...): Insignia azul/índigo con el número
-    if (/^\d+$/.test(raw) && raw !== '0') {
-        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Estado: ${raw}">${raw}</div>`;
+    // 3. Código 1: Insignia azul/celeste con texto '1'
+    if (raw === '1') {
+        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Estado: 1">1</div>`;
     }
 
     // 4. Rojo: Servicio / Ausente (S / A)
@@ -264,7 +262,7 @@ function obtenerInsigniaEstadoHtml(code) {
         return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EF4444] text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Servicio: ${raw}">${raw}</div>`;
     }
 
-    // 5. Modelo Imagen 3: Borde punteado negro con guión '-' centrado (para vacíos '-' / '0' / desconocidos)
+    // 5. Modelo Imagen 3: Borde punteado negro con guión '-' centrado (para vacíos '-' / '0' / cualquier otro número no declarado)
     return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl border-2 border-dashed border-slate-900 dark:border-slate-100 flex items-center justify-center text-slate-900 dark:text-slate-100 font-black text-xs select-none" title="Sin Estado">-</div>`;
 }
 
