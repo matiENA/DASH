@@ -705,7 +705,7 @@ function renderizar() {
                 const cManana = obtenerCodigoDiaChofer(ch, mananaObj);
 
                 htmlFinal += `
-                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 ${gapClass} shrink-0">
+                <article class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 ${gapClass} shrink-0">
                     <div class="flex items-center truncate flex-1 min-w-0 pr-1">
                         <span class="font-black text-xs text-slate-900 dark:text-slate-100 truncate">${ch.nom}</span>
                     </div>
@@ -714,7 +714,7 @@ function renderizar() {
                         ${obtenerInsigniaEstadoHtml(cHoy)}
                         ${obtenerInsigniaEstadoHtml(cManana)}
                     </div>
-                </div>`;
+                </article>`;
             });
             htmlFinal += `</div>`;
         } else {
