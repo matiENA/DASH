@@ -10,15 +10,17 @@ function cargarDatosIniciales(intentos = 0) {
         .then(data => {
             if (data) {
                 if (data.diagramas) {
-                    RAM_Flota = data.diagramas.flota || data.diagramas.diagramas || data.flota || [];
+                    RAM_Flota = data.diagramas;
+                    if (!RAM_Flota.flota) RAM_Flota.flota = data.diagramas.flota || {};
+                    if (!RAM_Flota.diagramas) RAM_Flota.diagramas = data.diagramas.diagramas || [];
                     if (data.diagramas.vencimientosObj) RAM_Flota.vencimientosObj = data.diagramas.vencimientosObj;
                 } else if (data.flota) {
                     RAM_Flota = data.flota;
                 }
-                if (data.vencimientosObj && Array.isArray(RAM_Flota)) {
+                if (data.vencimientosObj) {
                     RAM_Flota.vencimientosObj = data.vencimientosObj;
                 }
-                if (data.flotaMap && Array.isArray(RAM_Flota)) RAM_Flota.flotaMap = data.flotaMap;
+                if (data.flotaMap) RAM_Flota.flotaMap = data.flotaMap;
                 if (data.usuarios) RAM_Usuarios = data.usuarios;
                 if (typeof renderizar === 'function') renderizar();
             }

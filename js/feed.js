@@ -596,9 +596,23 @@ function renderizar() {
     const esCartelera = typeof esModoCartelera === 'function' && esModoCartelera();
     const { isoAyer, isoHoy, isoManana } = getFechas3DiasArgentina();
 
-    const listaFlotaDiagramas = (typeof RAM_Flota !== 'undefined' && RAM_Flota && Array.isArray(RAM_Flota.diagramas))
-        ? RAM_Flota.diagramas
-        : (Array.isArray(RAM_Flota) ? RAM_Flota : []);
+    let listaFlotaDiagramas = [];
+    if (typeof RAM_Flota !== 'undefined' && RAM_Flota) {
+        if (Array.isArray(RAM_Flota.diagramas)) {
+            listaFlotaDiagramas = RAM_Flota.diagramas;
+        } else if (Array.isArray(RAM_Flota)) {
+            listaFlotaDiagramas = RAM_Flota;
+        } else if (RAM_Flota.flota && typeof RAM_Flota.flota === 'object') {
+            listaFlotaDiagramas = Object.keys(RAM_Flota.flota).map(key => {
+                const item = RAM_Flota.flota[key];
+                return {
+                    nom: key.toUpperCase(),
+                    tractor: item.tractor || '',
+                    _diasIso: item._diasIso || item.diasIso || {}
+                };
+            });
+        }
+    }
 
     const choferes3Dias = listaFlotaDiagramas.filter(ch => {
         const diasIso = ch._diasIso || {};
