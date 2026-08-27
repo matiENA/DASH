@@ -246,13 +246,17 @@ function obtenerInsigniaEstadoHtml(code) {
         return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EAB308] text-slate-950 flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Viaje: ${raw}">${raw}</div>`;
     }
 
-    // 3. Rojo: Servicio / Ausente (S / A / 1)
-    if (raw === 'S' || raw === 'A' || raw === '1' || raw.includes('SERVICIO') || raw.includes('AUSENTE')) {
-        const textDisp = (raw === '1') ? 'S' : raw;
-        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EF4444] text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Servicio: ${raw}">${textDisp}</div>`;
+    // 3. Código 1: Insignia azul/celeste con texto '1' (tal cual figura en la planilla)
+    if (raw === '1') {
+        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Estado: 1">1</div>`;
     }
 
-    // 4. Modelo Imagen 3: Borde punteado negro con guión '-' centrado (remplaza al '?')
+    // 4. Rojo: Servicio / Ausente (S / A)
+    if (raw === 'S' || raw === 'A' || raw.includes('SERVICIO') || raw.includes('AUSENTE')) {
+        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EF4444] text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Servicio: ${raw}">${raw}</div>`;
+    }
+
+    // 5. Modelo Imagen 3: Borde punteado negro con guión '-' centrado (remplaza al '?')
     return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl border-2 border-dashed border-slate-900 dark:border-slate-100 flex items-center justify-center text-slate-900 dark:text-slate-100 font-black text-xs select-none" title="Sin Estado">-</div>`;
 }
 
