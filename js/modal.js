@@ -415,3 +415,76 @@ function abrirEdicion(id) {
         if (content) content.classList.remove('translate-y-full');
     }, 10);
 }
+
+function abrirModalCertificaciones3Dias() {
+    const modal = document.getElementById('modal-certificaciones-3dias');
+    if (!modal) return;
+
+    const container = document.getElementById('modal-certificaciones-3dias-contenido');
+    if (container && typeof getFechas3DiasArgentina === 'function') {
+        const { isoAyer, isoHoy, isoManana } = getFechas3DiasArgentina();
+        const listaFlotaDiagramas = (typeof RAM_Flota !== 'undefined' && RAM_Flota && Array.isArray(RAM_Flota.diagramas))
+            ? RAM_Flota.diagramas
+            : (Array.isArray(RAM_Flota) ? RAM_Flota : []);
+
+        const choferes3Dias = listaFlotaDiagramas.filter(ch => {
+            const diasIso = ch._diasIso || {};
+            const cAyer = diasIso[isoAyer] || '-';
+            const cHoy = diasIso[isoHoy] || '-';
+            return coincidePatronRenderizado(cAyer, cHoy);
+        });
+
+        if (choferes3Dias.length === 0) {
+            container.innerHTML = `<div class="h-48 flex flex-col justify-center items-center text-slate-400 dark:text-slate-500 font-bold text-xs">Sin choferes que coincidan con el patrón actual (Ayer vs Hoy)</div>`;
+        } else {
+            let html = `
+            <div class="flex items-center justify-between px-3 py-2 mb-1 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                <span class="flex-1 truncate pr-2">Conductor / Unidad</span>
+                <div class="flex items-center gap-[15px] shrink-0 text-center">
+                    <span class="w-8">Ayer</span>
+                    <span class="w-8 text-amber-400 font-black">Hoy</span>
+                    <span class="w-8">Mañana</span>
+                </div>
+            </div>`;
+
+            choferes3Dias.forEach(ch => {
+                const diasIso = ch._diasIso || {};
+                const cAyer = diasIso[isoAyer] || '-';
+                const cHoy = diasIso[isoHoy] || '-';
+                const cManana = diasIso[isoManana] || '-';
+
+                html += `
+                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 gap-3 shrink-0">
+                    <div class="flex flex-col truncate flex-1 min-w-0">
+                        <span class="font-black text-xs text-slate-900 dark:text-slate-100 truncate">${ch.nom}</span>
+                        <span class="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 tracking-wide">${ch.tractor || 'S/D'}</span>
+                    </div>
+                    <div class="flex items-center gap-[15px] shrink-0">
+                        ${obtenerInsigniaEstadoHtml(cAyer)}
+                        ${obtenerInsigniaEstadoHtml(cHoy)}
+                        ${obtenerInsigniaEstadoHtml(cManana)}
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+    }
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        const content = document.getElementById('modal-3dias-content');
+        if (content) content.classList.remove('translate-y-full');
+    }, 10);
+}
+
+function cerrarModalCertificaciones3Dias() {
+    const modal = document.getElementById('modal-certificaciones-3dias');
+    if (modal) {
+        modal.classList.add('opacity-0');
+        const content = document.getElementById('modal-3dias-content');
+        if (content) content.classList.add('translate-y-full');
+        setTimeout(() => modal.classList.add('hidden'), 250);
+    }
+}
