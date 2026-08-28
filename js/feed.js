@@ -805,6 +805,9 @@ function renderizar() {
 }
 
 function inicializarAutoScroll(containerId) {
+    // Desactivar autoscroll en Modo Edición (solo activo en Modo Cartelera / TV)
+    if (typeof esModoCartelera === 'function' && !esModoCartelera()) return;
+
     const track = document.getElementById(containerId);
     if (!track) return;
 
@@ -839,6 +842,8 @@ function inicializarAutoScroll(containerId) {
     const PAUSE_MS = 3000;
 
     const interval = setInterval(() => {
+        // Verificar que siga en Modo Cartelera durante la ejecución del intervalo
+        if (typeof esModoCartelera === 'function' && !esModoCartelera()) return;
         // Guardián de seguridad: auto-recuperar si quedó pausado por más de 8 segundos sin interacción activa
         if (isPaused && (Date.now() - lastPauseTime > 8000)) {
             isPaused = false;
