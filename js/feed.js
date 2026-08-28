@@ -657,16 +657,22 @@ function renderizar() {
         }
     }
 
-    const choferes3Dias = listaFlotaDiagramas.filter(ch => {
+    const choferesVuelvenHoy = listaFlotaDiagramas.filter(ch => {
         const cAyer = obtenerCodigoDiaChofer(ch, ayerObj);
         const cHoy = obtenerCodigoDiaChofer(ch, hoyObj);
         return coincidePatronRenderizado(cAyer, cHoy);
     });
 
+    const choferesVuelvenManana = listaFlotaDiagramas.filter(ch => {
+        const cHoy = obtenerCodigoDiaChofer(ch, hoyObj);
+        const cManana = obtenerCodigoDiaChofer(ch, mananaObj);
+        return coincidePatronRenderizado(cHoy, cManana);
+    });
+
     const visibleKeys = Object.keys(categorias).filter(k => {
         if (k === 'LIBRES') return false;
         if (k === 'VUELVE') {
-            return choferes3Dias.length > 0;
+            return choferesVuelvenHoy.length > 0 || choferesVuelvenManana.length > 0;
         }
         return categorias[k].items.length > 0;
     });
@@ -692,11 +698,9 @@ function renderizar() {
             const numCols = visibleKeys.length;
             const gapClass = numCols >= 6 ? 'gap-[15px]' : 'gap-[5px]';
 
-            htmlFinal += `<div id="${carouselId}" class="flex flex-col ${gapClass} overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">`;
-            
-            // Header 3 Días
+            // Encabezado único fijo de columnas (Conductor / Ayer / Hoy / Mañana)
             htmlFinal += `
-            <div class="flex items-center justify-between px-2 py-1 mb-1 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
+            <div class="flex items-center justify-between px-2 py-1 mb-1 text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
                 <span class="flex-1 truncate pr-1">Conductor</span>
                 <div class="flex items-center ${gapClass} shrink-0 text-center">
                     <span class="w-7 sm:w-8">Ayer</span>
@@ -705,23 +709,62 @@ function renderizar() {
                 </div>
             </div>`;
 
-            choferes3Dias.forEach(ch => {
-                const cAyer = obtenerCodigoDiaChofer(ch, ayerObj);
-                const cHoy = obtenerCodigoDiaChofer(ch, hoyObj);
-                const cManana = obtenerCodigoDiaChofer(ch, mananaObj);
-
+            htmlFinal += `<div id="${carouselId}" class="flex flex-col gap-2.5 overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">`;
+            
+            // SUBSECCIÓN 1: VUELVEN HOY (Quiebre entre Ayer y Hoy)
+            if (choferesVuelvenHoy.length > 0) {
                 htmlFinal += `
-                <article class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 ${gapClass} shrink-0">
-                    <div class="flex items-center truncate flex-1 min-w-0 pr-1">
-                        <span class="font-black text-xs text-slate-900 dark:text-slate-100 truncate">${ch.nom}</span>
-                    </div>
-                    <div class="flex items-center ${gapClass} shrink-0">
-                        ${obtenerInsigniaEstadoHtml(cAyer)}
-                        ${obtenerInsigniaEstadoHtml(cHoy)}
-                        ${obtenerInsigniaEstadoHtml(cManana)}
-                    </div>
-                </article>`;
-            });
+                <div class="flex items-center justify-between px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[9px] font-black uppercase text-amber-400 tracking-wider shrink-0 select-none">
+                    <span>HOY</span>
+                    <span class="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[8px] font-black">${choferesVuelvenHoy.length}</span>
+                </div>`;
+
+                choferesVuelvenHoy.forEach(ch => {
+                    const cAyer = obtenerCodigoDiaChofer(ch, ayerObj);
+                    const cHoy = obtenerCodigoDiaChofer(ch, hoyObj);
+                    const cManana = obtenerCodigoDiaChofer(ch, mananaObj);
+
+                    htmlFinal += `
+                    <article class="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 ${gapClass} shrink-0">
+                        <div class="flex items-center truncate flex-1 min-w-0 pr-1">
+                            <span class="font-black text-xs text-slate-900 dark:text-slate-100 truncate">${ch.nom}</span>
+                        </div>
+                        <div class="flex items-center ${gapClass} shrink-0">
+                            ${obtenerInsigniaEstadoHtml(cAyer)}
+                            ${obtenerInsigniaEstadoHtml(cHoy)}
+                            ${obtenerInsigniaEstadoHtml(cManana)}
+                        </div>
+                    </article>`;
+                });
+            }
+
+            // SUBSECCIÓN 2: VUELVEN MAÑANA (Quiebre entre Hoy y Mañana)
+            if (choferesVuelvenManana.length > 0) {
+                htmlFinal += `
+                <div class="flex items-center justify-between px-2 py-0.5 ${choferesVuelvenHoy.length > 0 ? 'mt-2' : ''} bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-[9px] font-black uppercase text-cyan-400 tracking-wider shrink-0 select-none">
+                    <span>MAÑANA</span>
+                    <span class="px-1.5 py-0.2 rounded-full bg-cyan-400 text-slate-950 text-[8px] font-black">${choferesVuelvenManana.length}</span>
+                </div>`;
+
+                choferesVuelvenManana.forEach(ch => {
+                    const cAyer = obtenerCodigoDiaChofer(ch, ayerObj);
+                    const cHoy = obtenerCodigoDiaChofer(ch, hoyObj);
+                    const cManana = obtenerCodigoDiaChofer(ch, mananaObj);
+
+                    htmlFinal += `
+                    <article class="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 ${gapClass} shrink-0">
+                        <div class="flex items-center truncate flex-1 min-w-0 pr-1">
+                            <span class="font-black text-xs text-slate-900 dark:text-slate-100 truncate">${ch.nom}</span>
+                        </div>
+                        <div class="flex items-center ${gapClass} shrink-0">
+                            ${obtenerInsigniaEstadoHtml(cAyer)}
+                            ${obtenerInsigniaEstadoHtml(cHoy)}
+                            ${obtenerInsigniaEstadoHtml(cManana)}
+                        </div>
+                    </article>`;
+                });
+            }
+
             htmlFinal += `</div>`;
         } else {
             htmlFinal += `<div id="${carouselId}" class="${columnClass}">`;
