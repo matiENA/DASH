@@ -238,23 +238,23 @@ function coincidePatronRenderizado(codeAyer, codeHoy) {
 function obtenerInsigniaEstadoHtml(code) {
     const raw = String(code || '-').trim().toUpperCase();
     
+    // 1. Vacío o Guión explícito / 0: Modelo Imagen 3 (cuadro con borde punteado)
+    if (!raw || raw === '-' || raw === '0') {
+        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl border-2 border-dashed border-slate-900 dark:border-slate-100 flex items-center justify-center text-slate-900 dark:text-slate-100 font-black text-xs select-none" title="Sin Estado">-</div>`;
+    }
+
     let trackingClass = 'tracking-normal';
     if (raw.length >= 3) trackingClass = 'tracking-tighter';
     else if (raw.length === 2) trackingClass = 'tracking-tight';
 
-    // 1. Verde: Franco / Franco Sin Franco (F / FSF)
+    // 2. Verde: Franco / Franco Sin Franco (F / FSF)
     if (raw === 'F' || raw === 'FSF' || raw.includes('FRANCO')) {
         return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#22C55E] text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Franco: ${raw}">${raw}</div>`;
     }
 
-    // 2. Amarillo: Viaje Sin Franco (VSF / V)
+    // 3. Amarillo: Viaje Sin Franco (VSF / V)
     if (raw === 'VSF' || raw === 'V' || raw.includes('VIAJE')) {
         return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EAB308] text-slate-950 flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Viaje: ${raw}">${raw}</div>`;
-    }
-
-    // 3. Código 1: Insignia azul/celeste con texto '1'
-    if (raw === '1') {
-        return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Estado: 1">1</div>`;
     }
 
     // 4. Rojo: Servicio / Ausente (S / A)
@@ -262,8 +262,8 @@ function obtenerInsigniaEstadoHtml(code) {
         return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EF4444] text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Servicio: ${raw}">${raw}</div>`;
     }
 
-    // 5. Modelo Imagen 3: Borde punteado negro con guión '-' centrado (para vacíos '-' / '0' / cualquier otro número no declarado)
-    return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl border-2 border-dashed border-slate-900 dark:border-slate-100 flex items-center justify-center text-slate-900 dark:text-slate-100 font-black text-xs select-none" title="Sin Estado">-</div>`;
+    // 5. Caracteres no cruciales o números (ej: 1, 17, 18, 24, etc.): Renderizar insignia azul/índigo con el caracter real
+    return `<div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs select-none ${trackingClass}" title="Estado: ${raw}">${raw}</div>`;
 }
 
 function obtenerPesosColumnasGuardados() {
