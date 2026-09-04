@@ -972,6 +972,7 @@ function copiarPatente(texto, event) {
 function normalizarTexto(n) {
     if (!n) return '';
     return String(n)
+        .normalize('NFC')
         .replace(/__N_TILDE__/gi, 'ñ')
         .trim()
         .toLowerCase()
