@@ -61,6 +61,8 @@ function obtenerVencimientosTarjeta(tractorPatente, choferNom) {
             vencList = RAM_Flota.vencimientosObj;
         } else if (Array.isArray(RAM_Flota) && RAM_Flota.vencimientosObj) {
             vencList = RAM_Flota.vencimientosObj;
+        } else if (RAM_Flota.unidades && Array.isArray(RAM_Flota.unidades)) {
+            vencList = RAM_Flota.unidades.flatMap(u => [u.tractor?.vencimientos, u.semi?.vencimientos]).filter(Boolean);
         }
     }
 
