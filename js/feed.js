@@ -143,7 +143,8 @@ function obtenerNombreChoferPorTractor(tractorPatente) {
         if (RAM_Flota.flota && typeof RAM_Flota.flota === 'object') {
             for (let nomKey in RAM_Flota.flota) {
                 const item = RAM_Flota.flota[nomKey];
-                if (item && item.tractor && item.tractor.trim().toUpperCase() === tractor) {
+                let t = item && (item.tractor || item.ut?.tractor?.patente);
+                if (t && t.trim().toUpperCase() === tractor) {
                     return nomKey.toUpperCase();
                 }
             }
@@ -151,7 +152,14 @@ function obtenerNombreChoferPorTractor(tractorPatente) {
         
         // 2. Buscar en RAM_Flota si es un array u objeto con items
         if (Array.isArray(RAM_Flota)) {
-            const found = RAM_Flota.find(c => (c.tractor || c.TRACTOR || '').trim().toUpperCase() === tractor);
+            const found = RAM_Flota.find(c => (c.tractor || c.ut?.tractor?.patente || c.TRACTOR || '').trim().toUpperCase() === tractor);
+            if (found && (found.nom || found.nombre || found.chofer)) {
+                return (found.nom || found.nombre || found.chofer).toUpperCase();
+            }
+        }
+
+        if (RAM_Flota.diagramas && Array.isArray(RAM_Flota.diagramas)) {
+            const found = RAM_Flota.diagramas.find(c => (c.tractor || c.ut?.tractor?.patente || c.TRACTOR || '').trim().toUpperCase() === tractor);
             if (found && (found.nom || found.nombre || found.chofer)) {
                 return (found.nom || found.nombre || found.chofer).toUpperCase();
             }
@@ -373,15 +381,36 @@ function cambiarVista(vista) {
 
 function obtenerListaFlotaArray() {
     if (!RAM_Flota) return [];
-    if (Array.isArray(RAM_Flota)) return RAM_Flota;
+    if (Array.isArray(RAM_Flota)) {
+        return RAM_Flota.map(item => ({
+            ...item,
+            tractor: item.tractor || item.ut?.tractor?.patente || '',
+            semi: item.semi || item.ut?.semi?.patente || '',
+            srv: item.srv || item.srv_chofer || item.ut?.srv_ut || 'S/A',
+            n_ute: item.n_ute || item.ut?.n_ute || '',
+            cisternado: item.cisternado || item.ut?.semi?.cisternado || ''
+        }));
+    }
+    if (RAM_Flota.diagramas && Array.isArray(RAM_Flota.diagramas)) {
+        return RAM_Flota.diagramas.map(item => ({
+            ...item,
+            tractor: item.tractor || item.ut?.tractor?.patente || '',
+            semi: item.semi || item.ut?.semi?.patente || '',
+            srv: item.srv || item.srv_chofer || item.ut?.srv_ut || 'S/A',
+            n_ute: item.n_ute || item.ut?.n_ute || '',
+            cisternado: item.cisternado || item.ut?.semi?.cisternado || ''
+        }));
+    }
     if (RAM_Flota.flota && typeof RAM_Flota.flota === 'object') {
         return Object.keys(RAM_Flota.flota).map(k => {
             const item = RAM_Flota.flota[k];
             return {
                 nom: item.nom || item.nombre || k,
-                tractor: item.tractor || '',
-                srv: item.servicio || item.srv || 'S/A',
-                n_ute: item.n_ute || ''
+                tractor: item.tractor || item.ut?.tractor?.patente || '',
+                semi: item.semi || item.ut?.semi?.patente || '',
+                srv: item.servicio || item.srv || item.srv_chofer || item.ut?.srv_ut || 'S/A',
+                n_ute: item.n_ute || item.ut?.n_ute || '',
+                cisternado: item.cisternado || item.ut?.semi?.cisternado || ''
             };
         });
     }
@@ -390,9 +419,11 @@ function obtenerListaFlotaArray() {
             const item = RAM_Flota[k];
             return {
                 nom: item.nom || item.nombre || k,
-                tractor: item.tractor || '',
-                srv: item.servicio || item.srv || 'S/A',
-                n_ute: item.n_ute || ''
+                tractor: item.tractor || item.ut?.tractor?.patente || '',
+                semi: item.semi || item.ut?.semi?.patente || '',
+                srv: item.servicio || item.srv || item.srv_chofer || item.ut?.srv_ut || 'S/A',
+                n_ute: item.n_ute || item.ut?.n_ute || '',
+                cisternado: item.cisternado || item.ut?.semi?.cisternado || ''
             };
         });
     }
@@ -651,8 +682,7 @@ function renderizar() {
                 const item = RAM_Flota.flota[key];
                 return {
                     nom: key.toUpperCase(),
-                    tractor: item.tractor || '',
-                    _diasIso: item._diasIso || item.diasIso || {},
+                    tractor: item.tractor || item.ut?.tractor?.patente || '',
                     dias: item.dias || {}
                 };
             });
@@ -997,14 +1027,16 @@ function generarHtmlCard(n) {
             infoFlota = RAM_Flota.flota[normNom];
         } else if (Array.isArray(RAM_Flota)) {
             infoFlota = RAM_Flota.find(c => normalizarTexto(c.nom || c.nombre) === normNom);
+        } else if (RAM_Flota.diagramas && Array.isArray(RAM_Flota.diagramas)) {
+            infoFlota = RAM_Flota.diagramas.find(c => normalizarTexto(c.nom || c.nombre) === normNom);
         }
     }
 
-    let tractorFinal = (infoFlota && infoFlota.tractor) ? infoFlota.tractor : (n.tractor || '');
-    let srvFinal = n.servicio ? n.servicio : ((infoFlota && infoFlota.servicio) ? infoFlota.servicio : (n.srv || 'S/A'));
+    let tractorFinal = (infoFlota && (infoFlota.tractor || infoFlota.ut?.tractor?.patente)) ? (infoFlota.tractor || infoFlota.ut?.tractor?.patente) : (n.tractor || '');
+    let srvFinal = n.servicio ? n.servicio : ((infoFlota && (infoFlota.servicio || infoFlota.srv_chofer || infoFlota.ut?.srv_ut)) ? (infoFlota.servicio || infoFlota.srv_chofer || infoFlota.ut?.srv_ut) : (n.srv || 'S/A'));
     if (srvFinal === 'DOCK SUD') srvFinal = 'EURO';
     if (srvFinal === 'UTE') srvFinal = 'LIVIANO';
-    let uteRaw = (infoFlota && infoFlota.n_ute) ? infoFlota.n_ute : (n.n_ute || '');
+    let uteRaw = (infoFlota && (infoFlota.n_ute || infoFlota.ut?.n_ute)) ? (infoFlota.n_ute || infoFlota.ut?.n_ute) : (n.n_ute || '');
     let uteBadge = (uteRaw && uteRaw !== 'S/D') ? uteRaw : '';
 
 

@@ -14,8 +14,13 @@ function cargarDatosIniciales(intentos = 0) {
                     if (!RAM_Flota.flota) RAM_Flota.flota = data.diagramas.flota || {};
                     if (!RAM_Flota.diagramas) RAM_Flota.diagramas = data.diagramas.diagramas || [];
                     if (data.diagramas.vencimientosObj) RAM_Flota.vencimientosObj = data.diagramas.vencimientosObj;
+                    if (data.diagramas.unidades) RAM_Flota.unidades = data.diagramas.unidades;
                 } else if (data.flota) {
                     RAM_Flota = data.flota;
+                    if (data.unidades) RAM_Flota.unidades = data.unidades;
+                }
+                if (data.unidades && !RAM_Flota.unidades) {
+                    RAM_Flota.unidades = data.unidades;
                 }
                 if (data.vencimientosObj) {
                     RAM_Flota.vencimientosObj = data.vencimientosObj;
