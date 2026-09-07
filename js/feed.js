@@ -193,24 +193,26 @@ function obtenerCodigoDiaChofer(ch, dateObj) {
     const dd = String(dateObj.getDate()).padStart(2, '0');
     const isoKey = `${yyyy}-${mm}-${dd}`;
 
-    // 1. Buscar en _diasIso (diccionario de fechas ISO 'YYYY-MM-DD')
-    if (ch._diasIso && typeof ch._diasIso === 'object' && ch._diasIso[isoKey] !== undefined) {
-        return ch._diasIso[isoKey];
-    }
-
-    // 2. Fallback: Buscar en ch.dias (por hoja de mes, ej: "AGO-26")
+    // 1. Buscar en ch.dias (por hoja de mes, ej: "Ago-26" o "AGO-26")
     if (ch.dias && typeof ch.dias === 'object') {
         const mesAbrev = MESES_ABREV[dateObj.getMonth()];
         const anio2 = String(yyyy).slice(-2);
-        const hojaKey = `${mesAbrev}-${anio2}`;
+        const hojaKeyUpper = `${mesAbrev}-${anio2}`.toUpperCase();
 
-        if (ch.dias[hojaKey]) {
-            const arrDias = String(ch.dias[hojaKey]).split(',');
+        const tabKey = Object.keys(ch.dias).find(k => k.toUpperCase() === hojaKeyUpper);
+        if (tabKey && ch.dias[tabKey]) {
+            const arrDias = String(ch.dias[tabKey]).split(',');
             const dayNum = dateObj.getDate();
             if (arrDias[dayNum - 1] !== undefined) {
-                return arrDias[dayNum - 1];
+                const val = String(arrDias[dayNum - 1] || '').trim().toUpperCase();
+                return (val === '' || val === 'UNDEFINED' || val === 'NULL') ? '-' : val;
             }
         }
+    }
+
+    // 2. Fallback retrocompatible: Buscar en _diasIso si aún existiera
+    if (ch._diasIso && typeof ch._diasIso === 'object' && ch._diasIso[isoKey] !== undefined) {
+        return ch._diasIso[isoKey];
     }
 
     return '-';
