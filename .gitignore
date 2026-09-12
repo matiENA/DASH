@@ -2,3 +2,8 @@
 /context db sheets
 notes
 settings.json
+
+# 🎨 Diseños y exportaciones para Figma
+/figma/
+/svg/
+*.svg

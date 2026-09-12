@@ -390,7 +390,7 @@ function obtenerListaFlotaArray() {
             semi: item.semi || item.ut?.semi?.patente || '',
             srv: item.srv || item.srv_chofer || item.ut?.srv_ut || 'S/A',
             n_ute: item.n_ute || item.ut?.n_ute || '',
-            cisternado: item.cisternado || item.ut?.semi?.cisternado || ''
+            cisternado: item.cisternado || item.ut?.semi?.cisternado || item.ut?.tractor?.semi?.cisternado || item.ut?.tractor?.cisternado || item.ut?.cisternado || ''
         }));
     }
     if (RAM_Flota.diagramas && Array.isArray(RAM_Flota.diagramas)) {
@@ -400,7 +400,7 @@ function obtenerListaFlotaArray() {
             semi: item.semi || item.ut?.semi?.patente || '',
             srv: item.srv || item.srv_chofer || item.ut?.srv_ut || 'S/A',
             n_ute: item.n_ute || item.ut?.n_ute || '',
-            cisternado: item.cisternado || item.ut?.semi?.cisternado || ''
+            cisternado: item.cisternado || item.ut?.semi?.cisternado || item.ut?.tractor?.semi?.cisternado || item.ut?.tractor?.cisternado || item.ut?.cisternado || ''
         }));
     }
     if (RAM_Flota.flota && typeof RAM_Flota.flota === 'object') {
@@ -412,7 +412,7 @@ function obtenerListaFlotaArray() {
                 semi: item.semi || item.ut?.semi?.patente || '',
                 srv: item.servicio || item.srv || item.srv_chofer || item.ut?.srv_ut || 'S/A',
                 n_ute: item.n_ute || item.ut?.n_ute || '',
-                cisternado: item.cisternado || item.ut?.semi?.cisternado || ''
+                cisternado: item.cisternado || item.ut?.semi?.cisternado || item.ut?.tractor?.semi?.cisternado || item.ut?.tractor?.cisternado || item.ut?.cisternado || ''
             };
         });
     }
@@ -425,7 +425,7 @@ function obtenerListaFlotaArray() {
                 semi: item.semi || item.ut?.semi?.patente || '',
                 srv: item.servicio || item.srv || item.srv_chofer || item.ut?.srv_ut || 'S/A',
                 n_ute: item.n_ute || item.ut?.n_ute || '',
-                cisternado: item.cisternado || item.ut?.semi?.cisternado || ''
+                cisternado: item.cisternado || item.ut?.semi?.cisternado || item.ut?.tractor?.semi?.cisternado || item.ut?.tractor?.cisternado || item.ut?.cisternado || ''
             };
         });
     }
@@ -1041,13 +1041,50 @@ function generarHtmlCard(n) {
     let uteRaw = (infoFlota && (infoFlota.n_ute || infoFlota.ut?.n_ute)) ? (infoFlota.n_ute || infoFlota.ut?.n_ute) : (n.n_ute || '');
     let uteBadge = (uteRaw && uteRaw !== 'S/D') ? uteRaw : '';
 
-
+    let cisternadoFinal = n.cisternado || '';
+    if (!cisternadoFinal && infoFlota) {
+        cisternadoFinal = infoFlota.cisternado 
+            || infoFlota.ut?.cisternado 
+            || infoFlota.ut?.tractor?.semi?.cisternado 
+            || infoFlota.ut?.semi?.cisternado 
+            || infoFlota.semi?.cisternado 
+            || infoFlota.tractor?.semi?.cisternado 
+            || '';
+    }
+    if (!cisternadoFinal && (tractorFinal || uteRaw) && typeof RAM_Flota !== 'undefined' && RAM_Flota) {
+        const catalogoUt = RAM_Flota.ut || RAM_Flota.unidades || (RAM_Flota.diagramas && RAM_Flota.diagramas.ut) || [];
+        if (Array.isArray(catalogoUt) && catalogoUt.length > 0) {
+            let utMatch = null;
+            if (tractorFinal) {
+                const trClean = tractorFinal.toUpperCase().replace(/\s+/g, '');
+                utMatch = catalogoUt.find(u => u.tractor?.patente && u.tractor.patente.toUpperCase().replace(/\s+/g, '') === trClean);
+            }
+            if (!utMatch && uteRaw && uteRaw !== 'S/D') {
+                const uteClean = String(uteRaw).trim();
+                utMatch = catalogoUt.find(u => String(u.n_ute || '').trim() === uteClean);
+            }
+            if (utMatch) {
+                cisternadoFinal = utMatch.semi?.cisternado 
+                    || utMatch.tractor?.semi?.cisternado 
+                    || utMatch.cisternado 
+                    || utMatch.tractor?.cisternado 
+                    || '';
+            }
+        }
+        if (!cisternadoFinal && tractorFinal && Array.isArray(RAM_Flota.vencimientosObj)) {
+            const trClean = tractorFinal.toUpperCase().replace(/\s+/g, '');
+            const vMatch = RAM_Flota.vencimientosObj.find(v => v.patente && v.patente.toUpperCase().replace(/\s+/g, '') === trClean);
+            if (vMatch && (vMatch.cisternado || vMatch.semi?.cisternado)) {
+                cisternadoFinal = vMatch.cisternado || vMatch.semi?.cisternado || '';
+            }
+        }
+    }
 
     if (n.tipo_novedad === 'LIBRES') {
         let tieneDetalle = n.detalle && n.detalle.trim().length > 0;
         let cardHeight = tieneDetalle ? 'min-h-[90px] py-3' : 'min-h-[85px] py-2.5';
         return `
-        <article id="card-${n.id}" draggable="true" ondragstart="iniciarDragCard(event, ${n.id})" ondragend="finalizarDragCard(event)" class="rounded-xl p-3 relative transition-all duration-300 w-[300px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 cursor-grab active:cursor-grabbing ${cardHeight}">
+        <article id="card-${n.id}" draggable="true" ondragstart="iniciarDragCard(event, ${n.id})" ondragend="finalizarDragCard(event)" class="rounded-xl p-3 relative transition-all duration-300 w-max min-w-[340px] max-w-[440px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 cursor-grab active:cursor-grabbing ${cardHeight}">
             <div class="card-inner-content flex flex-col w-full transition-opacity duration-200">
                 <div class="flex items-start justify-between w-full -mt-0.5 mb-1">
                     <h3 class="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight flex-1 pr-1">${n.nom}</h3>
@@ -1061,19 +1098,20 @@ function generarHtmlCard(n) {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">${srvFinal}</span>
-                    ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none">${uteBadge}</span>` : ''}
-                    <span onclick="copiarPatente('${(tractorFinal || '').replace(/'/g, "\\'")}', event)" class="text-[12px] font-extrabold text-black tracking-wide cursor-pointer hover:bg-black/10 px-1 py-0.5 rounded transition-all active:scale-95 flex items-center gap-1" title="Haz clic para copiar patente">
+                <div class="flex items-center gap-1 sm:gap-1.5 flex-nowrap w-max">
+                    <span class="bg-black text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase shrink-0">${srvFinal}</span>
+                    ${uteBadge ? `<span class="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none shrink-0">${uteBadge}</span>` : ''}
+                    <span onclick="copiarPatente('${(tractorFinal || '').replace(/'/g, "\\'")}', event)" class="text-[12px] font-extrabold text-black tracking-wide cursor-pointer hover:bg-black/10 px-1 py-0.5 rounded transition-all active:scale-95 flex items-center gap-1 shrink-0" title="Haz clic para copiar patente">
                         ${tractorFinal}
-                        <svg class="w-3 h-3 opacity-60 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        <svg class="w-3 h-3 opacity-60 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                     </span>
+                    ${cisternadoFinal ? `<span class="text-[11px] font-black text-black tracking-tight select-all shrink-0" title="Cisternado: ${cisternadoFinal}">${cisternadoFinal}</span>` : ''}
                     ${obtenerHtmlButtonTerminal(n)}
                 </div>
 
                 ${tieneDetalle ? `
                 <div class="mt-2 bg-black/10 rounded-lg p-2.5 overflow-y-auto custom-scrollbar max-h-24">
-                    <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-wrap break-words">${n.detalle}</p>
+                    <p class="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-line break-words">${n.detalle}</p>
                 </div>` : ''}
 
 
@@ -1394,20 +1432,20 @@ function obtenerHtmlButtonTerminal(n) {
             return '';
         }
         return `
-        <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide flex items-center gap-1 shadow-xs select-none" style="background-color: ${cfg.bg}; color: ${cfg.text};" title="Terminal: ${term}">
+        <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide flex items-center gap-1 shadow-xs select-none shrink-0 whitespace-nowrap" style="background-color: ${cfg.bg}; color: ${cfg.text};" title="Terminal: ${term}">
             <span>${term}</span>
         </span>`;
     }
 
     if (!term || !cfg) {
         return `
-        <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-black/10 dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-black/20 dark:hover:bg-white/20 transition-all flex items-center gap-1 cursor-pointer" title="Asignar Terminal">
+        <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-black/10 dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-black/20 dark:hover:bg-white/20 transition-all flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap" title="Asignar Terminal">
             <span>+ TERMINAL</span>
         </button>`;
     }
 
     return `
-    <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-transform active:scale-95 cursor-pointer flex items-center gap-1 shadow-xs" style="background-color: ${cfg.bg}; color: ${cfg.text};" title="Cambiar Terminal">
+    <button type="button" onclick="toggleDropdownTerminalCard(${n.id}, event)" class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-transform active:scale-95 cursor-pointer flex items-center gap-1 shadow-xs shrink-0 whitespace-nowrap" style="background-color: ${cfg.bg}; color: ${cfg.text};" title="Cambiar Terminal">
         <span>${term}</span>
     </button>`;
 }
