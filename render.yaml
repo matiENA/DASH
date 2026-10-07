@@ -1,0 +1,53 @@
+# ==============================================================
+# Blueprint para Render — Monorepo DASH
+# 1. Backend Web Service: Node.js Express + Supabase + Socket.IO
+# 2. Frontend Static Site: Sitio Estático HTML5 / Tailwind / Supabase
+# ==============================================================
+
+services:
+  # ------------------------------------------------------------
+  # 1. Backend: Web Service
+  # ------------------------------------------------------------
+  - type: web
+    name: dash-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: SUPABASE_URL
+        value: https://rsvajuxihvmpmrmlcbul.supabase.co
+      - key: SUPABASE_KEY
+        value: sb_publishable_n97mVkSclRpuv_OsseO3gg_BjR9QT3R
+      - key: FRONTEND_URL
+        value: https://dash-frontend.onrender.com
+      - key: NODE_ENV
+        value: production
+
+  # ------------------------------------------------------------
+  # 2. Frontend: Static Site
+  # ------------------------------------------------------------
+  - type: static
+    name: dash-frontend
+    rootDir: frontend
+    staticPublishPath: .
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+      - path: /css/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /js/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
