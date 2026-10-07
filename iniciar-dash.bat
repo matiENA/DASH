@@ -1,18 +1,23 @@
 @echo off
-title Iniciar DASH (Backend Web Service + Frontend)
+title Iniciar Entorno de Prueba DASH (Backend 3005 + Frontend 3000)
 echo ============================================================
-echo   Iniciando DASH Local
-echo   Backend: http://localhost:3000
-echo   Frontend: http://localhost:3000/ o directo desde frontend/
+echo   Iniciando Entorno de Prueba DASH
+echo   - Backend Web Service  ➔  http://localhost:3005
+echo   - Frontend Static Site ➔  http://localhost:3000
 echo ============================================================
 
 cd /d "%~dp0backend"
-start "DASH - Backend Web Service (Puerto 3000)" cmd /k "npm start"
+start "Backend - DASH Web Service (Puerto 3005)" cmd /k "npm start"
+
+timeout /t 2 /nobreak > nul
+
+cd /d "%~dp0frontend"
+start "Frontend - DASH Static Site (Puerto 3000)" cmd /k "npm start"
 
 timeout /t 2 /nobreak > nul
 
 echo.
-echo Servidor Backend iniciado en puerto 3000.
-echo Abriendo Dashboard en el navegador...
-start "" "%~dp0frontend\index.html"
+echo Ambos servicios han sido levantados.
+echo Abriendo Dashboard en: http://localhost:3000
+start http://localhost:3000
 echo.

@@ -17,7 +17,7 @@ const createAuthRouter = require('./routes/auth');
 const app = express();
 const server = http.createServer(app);
 
-const PORT = parseInt(process.env.PORT, 10) || 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3005;
 
 // ==============================================================
 // 📦 COMPRESIÓN GZIP (Reduce transferencia de datos hasta un 85%)
@@ -39,11 +39,13 @@ const allowedExplicitOrigins = [
     "https://dash-frontend.onrender.com",
     "https://dash-aa1f.onrender.com",
     "http://localhost:3000",
+    "http://localhost:3005",
     "http://localhost:5173",
     "http://localhost:5500",
     "http://localhost:8080",
-    "http://127.0.0.1:5500",
-    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3005",
+    "http://127.0.0.1:5500"
 ].filter(Boolean);
 
 const checkOrigin = function(origin, callback) {

@@ -6,8 +6,12 @@
 const ES_LOCAL = typeof window !== 'undefined' && 
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-// URL del Backend Web Service (modificable en runtime si se desea con window.BACKEND_API_URL)
-const DEFAULT_LOCAL_BACKEND = 'http://localhost:3000';
+// Asignación de puertos para entorno de prueba:
+// Frontend: Puerto 3000
+// Backend:  Puerto 3005
+const PUERTO_BACKEND_LOCAL = (typeof window !== 'undefined' && window.location.port === '3005') ? '3000' : '3005';
+const DEFAULT_LOCAL_BACKEND = `http://localhost:${PUERTO_BACKEND_LOCAL}`;
+
 const DEFAULT_PROD_BACKEND = (typeof window !== 'undefined' && window.BACKEND_API_URL)
     ? window.BACKEND_API_URL
     : 'https://dash-backend.onrender.com';
@@ -19,4 +23,3 @@ let RAM_Flota = [];
 let RAM_Novedades = [];
 let RAM_Usuarios = [];
 let vistaActual = 'todas';
-

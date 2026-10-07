@@ -110,20 +110,32 @@ Si prefieres crearlos individualmente desde el Dashboard:
 
 ---
 
-## 💻 Ejecución en Desarrollo Local
+## 💻 Ejecución en Entorno de Prueba Local
 
-1. **Instalar dependencias del backend:**
+Se han asignado los puertos estándar del ecosistema:
+* **Frontend Static Site:** `http://localhost:3000`
+* **Backend Web Service:** `http://localhost:3005`
+
+### Opción 1: Arranque Rápido con Batch (Recomendado)
+Simplemente ejecuta con doble clic el archivo [`iniciar-dash.bat`](iniciar-dash.bat).
+Este script:
+1. Inicia el Web Service en una consola en el puerto **3005**.
+2. Inicia el servidor estático del frontend en otra consola en el puerto **3000**.
+3. Abre automáticamente `http://localhost:3000` en tu navegador.
+
+### Opción 2: Arranque Manual por Terminal
+
+1. **Iniciar el Backend Web Service:**
    ```bash
    cd backend
-   npm install
-   ```
-
-2. **Iniciar el Web Service:**
-   ```bash
    npm start
+   # Activo en http://localhost:3005 (Health check: http://localhost:3005/health)
    ```
-   El backend estará disponible en `http://localhost:3000`.
 
-3. **Abrir el Frontend:**
-   - Puedes abrir directamente `frontend/index.html` con cualquier navegador o servidor local (Live Server en VSCode, `npx serve frontend`, etc.).
-   - O ejecutar el archivo `iniciar-dash.bat` con doble clic.
+2. **Iniciar el Frontend Static Site:**
+   ```bash
+   cd frontend
+   npm start
+   # Activo en http://localhost:3000
+   ```
+
