@@ -1,9 +1,10 @@
-# DASH — Tablero Operativo de Flota (React 19 + Vite Static Site)
+# DASH — Tablero Operativo de Flota (Monorepo React 19 + Node.js Hot RAM)
 
-Aplicación frontend de alto rendimiento para el seguimiento operativo de flota, cartelera Kanban interactiva, unidades libres y novedades en tiempo real. 
+Aplicación integral de alto rendimiento para el seguimiento operativo de flota, cartelera Kanban interactiva, unidades libres, retornos de choferes en tiempo real y gestión de novedades.
 
-- **Frontend:** React 19, Vite, TypeScript, Tailwind CSS v4, Motion, DnD-Kit, Zustand.
-- **Backend Embebido (Hot RAM Engine):** Conectado al Web Service de alta reactividad [`sheet-render`](https://sheet-render.onrender.com) con Dirty Check inteligente contra Supabase PostgreSQL, ETag 304 y canales WebSocket `/dash` en tiempo real.
+- **Frontend (Static Site):** React 19, Vite, TypeScript, Tailwind CSS v4, Motion, DnD-Kit, Zustand.
+- **Backend (Web Service - Hot RAM Engine):** Node.js Express, Socket.IO (`/dash`), compresión Gzip, ETag 304, dirty checking inteligente y bridge Supabase Realtime para supresión total de egress redundante.
+- **Base de Datos:** Supabase PostgreSQL (`rsvajuxihvmpmrmlcbul`).
 
 ---
 
@@ -11,83 +12,127 @@ Aplicación frontend de alto rendimiento para el seguimiento operativo de flota,
 
 ```mermaid
 flowchart TD
-    subgraph Client["💻 DASH Frontend (Render Static Site / Local)"]
+    subgraph Client["💻 DASH Frontend (Static Site: dash-aa1f.onrender.com)"]
         SPA["React 19 SPA (Zustand In-Memory Cache)"]
         Kanban["Muro Kanban Drag & Drop"]
         Modal["Modal Rápido + Autocompletado Flota"]
+        Vuelve["Columna VUELVE (Hoy y Mañana)"]
     end
 
-    subgraph CloudBackend["⚡ Hot RAM Backend (Render Web Service)"]
-        SR["sheet-render.onrender.com"]
-        RAM[("⚡ HOT RAM CACHE\n• Latencia < 5ms\n• ETag 304 Not Modified\n• Supresión de Egress")]
+    subgraph CloudBackend["⚡ Hot RAM Backend (Render Web Service: dash-backend)"]
+        Express["Express API (/api/dash, /api/novedades, /api/auth)"]
+        RAM[("⚡ HOT RAM CACHE\n• Latencia < 5ms\n• ETag 304 Not Modified\n• 265 Choferes en Memoria")]
         SIO["Socket.IO Server (/dash)"]
-        DC["Dirty Checker (pg_stat_user_tables)"]
+        RTBridge["Bridge Supabase Realtime (postgres_changes)"]
     end
 
     subgraph SupabaseDB["🐘 Supabase PostgreSQL"]
-        Tables[("unidades / choferes / movimientos / novedades")]
+        Tables[("Tablas: novedades / dash_menciones / terminales / choferes")]
+        Views[("Vistas V2: view_dash_novedades / view_dash_flota / view_dash_retorno / view_dash_usuarios")]
     end
 
-    SPA -->|"1. REST API (Flota, Novedades, Retornos, Terminales)"| RAM
-    RAM -->|"Lectura instantánea (< 5ms)"| SPA
-    SIO -->|"2. Push WebSocket en vivo ('novedades_actualizadas' y 'datos_actualizados')"| SPA
-    SPA -->|"3. Mutaciones (Nueva novedad, Resolver, Mencionar)"| SR
-    SR -->|"Escritura atómica"| Tables
-    DC -->|"Monitoreo liviano cada 30s"| Tables
+    SPA -->|"1. Lectura inicial REST (< 5ms)"| RAM
+    RAM -->|"Lectura instantánea (ETag 304)"| SPA
+    SIO -->|"2. Push en vivo ('novedades_actualizadas' y 'datos_actualizados')"| SPA
+    SPA -->|"3. Mutaciones (Nueva novedad, Resolver, Asignar Terminal)"| Express
+    Express -->|"4. Escritura atómica normalizada"| Tables
+    Tables -->|"5. Actualización de vistas"| Views
+    RTBridge -->|"6. Listener Realtime invalida e hidrata Hot RAM"| RAM
 ```
 
 ---
 
-## 📁 Estructura del Repositorio
+## 📁 Estructura del Repositorio (Monorepo Canónico)
 
 ```text
 dash/
-├── src/
-│   ├── components/           # Componentes modulares de interfaz
-│   │   ├── kanban/           # KanbanBoard, NoveltyCard, ReturnColumn, LibresRow
-│   │   ├── layout/           # Header, AuthDropdown, FloatingActionButton
-│   │   └── modals/           # NoveltyModal (creación y edición con autocompletado)
-│   ├── hooks/                # useDash (conexión API + Socket.IO en vivo), useAutoScroll
-│   ├── services/             # api.ts (cliente HTTP para Hot RAM Backend)
-│   ├── store/                # useDashStore.ts (estado global con Zustand)
-│   ├── types/                # dash.ts (interfaces canónicas TypeScript)
-│   ├── App.tsx               # Orquestador principal de la vista
-│   ├── index.css             # Directivas Tailwind CSS
-│   └── main.tsx              # Punto de entrada de React
+├── backend/                              # ⚡ Web Service Node.js (Hot RAM + Express)
+│   ├── routes/
+│   │   ├── auth.js                       # Autenticación segura de operadores (/api/auth/login)
+│   │   ├── dash.js                       # Endpoints Hot RAM (/api/dash/flota, /retorno, /novedades, /usuarios, /terminales)
+│   │   └── novedades.js                  # Mutaciones atómicas (/api/novedades/actualizar, /mencion, /terminal)
+│   ├── utils/
+│   │   ├── normalizar.js                 # Normalización de textos y matching de choferes
+│   │   └── supabase.js                   # Cliente Supabase, sanitización de fechas y puente Realtime
+│   ├── server.js                         # Servidor Express, Socket.IO /dash, compresión gzip, auto-hidratación
+│   ├── package.json                      # Dependencias backend aisladas
+│   ├── .env.example                      # Variables de entorno modelo
+│   └── .env                              # Configuración local (puerto 3005)
 │
-├── render.yaml               # Blueprint oficial para despliegue Static Site en Render
-├── vite.config.ts            # Configuración de compilación Vite + plugins
-├── tsconfig.json             # Configuración de TypeScript
-├── package.json              # Dependencias y scripts
-├── iniciar-dash-react.bat    # Script de arranque rápido local en Windows
-└── .gitignore                # Reglas de exclusión para Git
+├── frontend/                             # 💻 Static Site React 19 SPA (Vite)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── kanban/                   # KanbanBoard, NoveltyCard, ReturnColumn, LibresRow, QuickAddLibre
+│   │   │   ├── layout/                   # Header (Reloj 24h, 4 Vistas, Switch Cartelera), AuthDropdown, FAB
+│   │   │   └── modals/                   # NoveltyModal (2 pasos con validación y autocompletado)
+│   │   ├── hooks/                        # useDash (Socket.IO + REST), useAutoScroll (Modo Cartelera TV)
+│   │   ├── services/                     # api.ts (cliente HTTP tolerante a fallos)
+│   │   ├── store/                        # useDashStore.ts (Zustand con persistencia)
+│   │   ├── types/                        # dash.ts (interfaces TypeScript)
+│   │   ├── App.tsx                       # Orquestador visual 100% pantalla
+│   │   ├── index.css                     # Tailwind CSS v4
+│   │   └── main.tsx                      # Punto de entrada
+│   ├── index.html                        # Plantilla HTML5
+│   ├── package.json                      # Dependencias frontend aisladas
+│   ├── tsconfig.json                     # Configuración TypeScript
+│   ├── vite.config.ts                    # Configuración Vite
+│   └── .env.example                      # Variables de entorno modelo (puerto 3005 / Render)
+│
+├── supabase/
+│   └── dash_views_v2.sql                 # 🗄️ Script DDL oficial para migrar y actualizar las vistas en Supabase
+│
+├── render.yaml                           # 🚀 Blueprint oficial para desplegar ambos servicios en Render
+├── package.json                          # Scripts de orquestación raíz
+├── iniciar-dash.bat                      # Script de arranque rápido simultáneo en Windows
+└── .gitignore                            # Exclusiones Git (node_modules, dist, .env)
 ```
 
 ---
 
-## 🚀 Despliegue en Render (Static Site)
+## 🚀 Despliegue en Render (Web Service via Blueprint + Static Site Preexistente)
 
-El repositorio incluye el archivo [`render.yaml`](render.yaml) configurado para despliegue instantáneo como **Static Site**:
+La arquitectura en producción se divide en:
 
-1. En el panel de Render, ir a **Blueprints > New Blueprint Instance**.
-2. Conectar el repositorio de GitHub (`matiENA/DASH`).
-3. Render detectará automáticamente `render.yaml` y configurará el servicio:
-   - **Nombre:** `dash-frontend`
-   - **Build Command:** `npm install && npm run build`
-   - **Publish Directory:** `dist`
-   - **Rutas SPA:** Rewrite automático `/*` ➔ `/index.html`.
-4. El frontend conectará de forma transparente con el backend Hot RAM (`https://sheet-render.onrender.com`).
+1. **Frontend (Static Site Preexistente):**
+   - URL de producción: [`https://dash-aa1f.onrender.com`](https://dash-aa1f.onrender.com)
+   - ID del servicio: `srv-d9d6idn41pts73dn4p50`
+   - Build Command: `npm install && npm run build` (Directorio raíz: `frontend`)
+   - Publish Directory: `dist`
+   - Rutas SPA: Rewrite automático `/*` ➔ `/index.html`
+
+2. **Backend (Web Service vía Blueprint):**
+   - Aprovisionado automáticamente mediante [`render.yaml`](render.yaml).
+   - En el panel de Render, ir a **Blueprints > New Blueprint Instance** y conectar `matiENA/DASH`.
+   - Servicio aprovisionado:
+     - **`dash-backend` (Web Service):**
+       - Directorio raíz: `backend`
+       - Build Command: `npm install`
+       - Start Command: `npm start`
+       - Health Check: `/health` (Zero-downtime deploys)
 
 ---
 
-## 💻 Desarrollo Local
+## 🗄️ Vistas y Esquema de Supabase (Editor SQL)
 
-Para ejecutar el entorno local en Windows:
+El script SQL unificado [`supabase/dash_views_v2.sql`](supabase/dash_views_v2.sql) reemplaza las vistas legacy obsoletas por el esquema canónico v2:
 
-1. Doble clic en `iniciar-dash-react.bat` (o por terminal):
-   ```bash
-   npm install
-   npm run dev
+- **`view_dash_novedades`**: Integra choferes, unidades, tractores, semis, cisternado, vencimientos operativos, catálogo de terminales y agregación relacional de menciones (`dash_menciones`).
+- **`view_dash_flota`**: Catálogo maestro de 265 choferes con vencimientos (`MAS`, `VTV`, `Esp-Es`, `VI`, `VE`), fotos, teléfonos y servicios.
+- **`view_dash_retorno`**: Choferes que retornan hoy y mañana calculados con estados de ayer, hoy y mañana para alimentar la columna `VUELVE`.
+- **`view_dash_usuarios`**: Lista segura de operadores para autocompletar menciones (eliminando la exposición de passwords).
+- **`view_dash_terminales`**: Catálogo oficial de terminales activas (`DOCK SUD`, `CAMPANA`, `ZARATE`, etc.).
+
+---
+
+## 💻 Desarrollo Local en Windows
+
+Para ejecutar el entorno completo en Windows:
+
+1. Doble clic en `iniciar-dash.bat` (o desde la consola):
+   ```cmd
+   iniciar-dash.bat
    ```
-2. La aplicación abrirá automáticamente en: `http://localhost:3000` (o `http://localhost:5173`).
-3. Si el backend local (`dash-backend`) está corriendo en el puerto `3005`, se conectará a este; de lo contrario, utilizará el servicio Hot RAM en la nube.
+2. El script iniciará:
+   - **Backend Hot RAM:** en `http://localhost:3005`
+   - **Frontend React:** en `http://localhost:3000`
+3. Se abrirá automáticamente el navegador en `http://localhost:3000`.
