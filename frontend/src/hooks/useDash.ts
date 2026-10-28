@@ -4,11 +4,12 @@ import { Novedad, FlotaItem, Usuario, RetornoItem, TerminalItem } from '../types
 import { api } from '../services/api';
 import { useDashStore } from '../store/useDashStore';
 
+const isLocal = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
 const SOCKET_URL = (import.meta as any).env?.VITE_SOCKET_URL ||
   (import.meta as any).env?.VITE_API_URL ||
-  ((typeof window !== 'undefined' && window.location.hostname === 'localhost')
-    ? 'http://localhost:3005'
-    : 'https://dash-backend.onrender.com');
+  (isLocal ? 'http://localhost:3005' : 'https://dash-backend.onrender.com');
 
 export function useDash() {
   const { setTerminales, setServicios } = useDashStore();

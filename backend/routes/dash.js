@@ -298,6 +298,245 @@ function createDashRouter(sharedState, ioDash) {
         }
     });
 
+    // ==============================================================
+    // 👤 ENDPOINTS DE LEGAJO, OBSERVACIONES Y ASIGNACIÓN DE UNIDADES
+    // ==============================================================
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const cacheLegajo = new Map();
+    const CACHE_TTL_MS = 60000;
+
+    async function resolverChoferId(identificador) {
+        if (!identificador) return null;
+        const str = String(identificador).trim();
+        if (UUID_REGEX.test(str)) return str;
+
+        const norm = normalizarComparacion(str);
+        const cleanNum = str.replace(/\D/g, '');
+
+        // 1. Buscar en sharedState.flota en Hot RAM
+        if (sharedState && sharedState.flota) {
+            const chEnRAM = sharedState.flota.find(c => {
+                if (c.chofer_id && UUID_REGEX.test(c.chofer_id)) {
+                    if (c._safeId === str) return true;
+                    if (c.dni && cleanNum && String(c.dni).replace(/\D/g, '') === cleanNum) return true;
+                    if (c.legajo && c.legajo === str) return true;
+                    const normC = normalizarComparacion(c.nom || '');
+                    if (normC === norm) return true;
+                }
+                return false;
+            });
+            if (chEnRAM?.chofer_id) return chEnRAM.chofer_id;
+        }
+
+        // 2. Buscar en Supabase 'choferes'
+        const { supabase } = require('../utils/supabase');
+        if (supabase) {
+            try {
+                let query = supabase.from('choferes').select('id, nombre, dni, legajo');
+                if (cleanNum && cleanNum.length >= 6) {
+                    query = query.or(`dni.eq.${cleanNum},nombre.ilike.%${str}%,legajo.eq.${str}`);
+                } else {
+                    query = query.or(`nombre.ilike.%${str}%,legajo.eq.${str}`);
+                }
+                const { data } = await query.limit(1).maybeSingle();
+                if (data?.id) return data.id;
+            } catch (e) {}
+
+            try {
+                let docQuery = supabase.from('chofer_documentacion').select('chofer_id');
+                if (cleanNum) {
+                    docQuery = docQuery.or(`drv_codigo.eq.${str},dni.eq.${cleanNum},cuil.ilike.%${cleanNum}%`);
+                } else {
+                    docQuery = docQuery.eq('drv_codigo', str);
+                }
+                const { data: docData } = await docQuery.limit(1).maybeSingle();
+                if (docData?.chofer_id) return docData.chofer_id;
+            } catch (e) {}
+        }
+
+        return null;
+    }
+
+    // GET /api/dash/chofer/:id/legajo — Ficha documental y observaciones
+    router.get('/chofer/:id/legajo', async (req, res) => {
+        const { id } = req.params;
+        if (!id) return res.status(400).json({ error: "Falta id de chofer" });
+
+        const now = Date.now();
+        const cached = cacheLegajo.get(id);
+        if (cached && (now - cached.timestamp < CACHE_TTL_MS)) {
+            return res.json({ success: true, cached: true, ...cached.data });
+        }
+
+        try {
+            const { supabase } = require('../utils/supabase');
+            const choferId = await resolverChoferId(id);
+            if (!choferId) {
+                return res.status(404).json({ success: false, error: `Chofer '${id}' no encontrado.` });
+            }
+
+            const [docRes, obsRes] = await Promise.all([
+                supabase.from('chofer_documentacion').select('*').eq('chofer_id', choferId).maybeSingle(),
+                supabase.from('chofer_observaciones').select('*').eq('chofer_id', choferId).order('fecha', { ascending: false })
+            ]);
+
+            const payload = {
+                chofer_id: choferId,
+                documentacion: docRes.data || null,
+                observaciones: obsRes.data || []
+            };
+
+            cacheLegajo.set(id, { timestamp: now, data: payload });
+            cacheLegajo.set(choferId, { timestamp: now, data: payload });
+
+            res.json({ success: true, cached: false, ...payload });
+        } catch (err) {
+            console.error("❌ Error consultando legajo de chofer:", err);
+            res.status(500).json({ error: "Error consultando legajo", detalle: err.message });
+        }
+    });
+
+    // PUT /api/dash/chofer/:id/legajo — Actualizar documentación
+    router.put(['/chofer/:id/legajo', '/chofer/:id/documentos'], async (req, res) => {
+        const { id } = req.params;
+        const updates = req.body || {};
+        try {
+            const { supabase } = require('../utils/supabase');
+            const choferId = await resolverChoferId(id);
+            if (!choferId) {
+                return res.status(404).json({ success: false, error: `Chofer '${id}' no encontrado.` });
+            }
+
+            const validCols = [
+                'venc_licencia_nacional', 'venc_psicofisico', 'venc_cargas_peligrosas', 'venc_periodico',
+                'venc_curso_shell', 'venc_manejo_def', 'curso_pae', 'apto_medico_venc', 'apto_medico_estado',
+                'avalado_contratos', 'vacuna_antitetanica', 'metabolitos_7', 'vacuna_covid', 'dosis_covid',
+                'obs_documentacion', 'telefono', 'email', 'domicilio', 'localidad', 'telefono_emergencia'
+            ];
+
+            const dbPayload = { actualizado_el: new Date().toISOString() };
+            validCols.forEach(col => {
+                if (updates[col] !== undefined) dbPayload[col] = updates[col];
+            });
+
+            if (updates.exVen) dbPayload.venc_periodico = updates.exVen;
+            if (updates.licVen) dbPayload.venc_licencia_nacional = updates.licVen;
+            if (updates.certVen) dbPayload.venc_cargas_peligrosas = updates.certVen;
+
+            const { data, error } = await supabase
+                .from('chofer_documentacion')
+                .update(dbPayload)
+                .eq('chofer_id', choferId)
+                .select()
+                .maybeSingle();
+
+            if (error) throw error;
+
+            cacheLegajo.delete(id);
+            cacheLegajo.delete(choferId);
+
+            res.json({
+                success: true,
+                message: "Documentación actualizada en Supabase",
+                documentacion: data
+            });
+        } catch (err) {
+            console.error("❌ Error actualizando legajo:", err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // POST /api/dash/chofer/:id/observaciones — Registrar observación
+    router.post('/chofer/:id/observaciones', async (req, res) => {
+        const { id } = req.params;
+        const obs = req.body || {};
+        try {
+            const { supabase } = require('../utils/supabase');
+            const choferId = await resolverChoferId(id);
+            if (!choferId) {
+                return res.status(404).json({ success: false, error: `Chofer '${id}' no encontrado.` });
+            }
+
+            const nuevaObs = {
+                chofer_id: choferId,
+                fecha: obs.fecha || new Date().toISOString().split('T')[0],
+                unidad_dominio: obs.unidad || obs.unidad_dominio || null,
+                evento: obs.evento || 'Observación general',
+                obs_evento: obs.obsEvento || obs.obs_evento || '',
+                estado: obs.estado || 'PENDIENTE',
+                obs_estado: obs.obsEstado || obs.obs_estado || '',
+                admin_carga: obs.admin || obs.usuario || obs.admin_carga || 'Sistema'
+            };
+
+            const { data, error } = await supabase
+                .from('chofer_observaciones')
+                .insert([nuevaObs])
+                .select()
+                .maybeSingle();
+
+            if (error) throw error;
+
+            cacheLegajo.delete(id);
+            cacheLegajo.delete(choferId);
+
+            res.json({ success: true, observacion: data });
+        } catch (err) {
+            console.error("❌ Error insertando observación:", err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // POST /api/dash/asignar-unidad — Asignar o desasignar unidad
+    router.post(['/asignar-unidad', '/cambiar-unidad', '/chofer/:id/unidad'], async (req, res) => {
+        try {
+            const body = req.body || {};
+            const idParam = req.params?.id;
+            const identificadorChofer = idParam || body.id_chofer || body.chofer_id || body.id || body.safeId || body.nombre;
+
+            if (!identificadorChofer) {
+                return res.status(400).json({ success: false, error: "Identificador de chofer requerido" });
+            }
+
+            const { supabase } = require('../utils/supabase');
+            const targetChoferId = await resolverChoferId(identificadorChofer);
+            if (!targetChoferId) {
+                return res.status(404).json({ success: false, error: `Chofer '${identificadorChofer}' no encontrado.` });
+            }
+
+            let targetUnidadId = body.id_unidad || body.unidad_id || null;
+            if (targetUnidadId === 'null' || targetUnidadId === 'undefined' || targetUnidadId === '') {
+                targetUnidadId = null;
+            }
+
+            const esDesasignar = (!targetUnidadId && !body.tractor && !body.semi && !body.n_ute) || body.desasignar === true;
+
+            if (supabase) {
+                if (esDesasignar) {
+                    await supabase.from('choferes').update({ unidad_id: null, estado: 'inactivo', actualizado_el: new Date().toISOString() }).eq('id', targetChoferId);
+                } else if (targetUnidadId) {
+                    await supabase.from('choferes').update({ unidad_id: targetUnidadId, estado: 'circulando', actualizado_el: new Date().toISOString() }).eq('id', targetChoferId);
+                    await supabase.from('unidades').update({ estado: 'circulando' }).eq('id', targetUnidadId);
+                }
+            }
+
+            cacheLegajo.delete(targetChoferId);
+            if (ioDash) {
+                ioDash.emit('datos_actualizados', { timestamp: new Date().toISOString(), accion: 'asignacion_unidad' });
+            }
+
+            res.json({
+                success: true,
+                message: esDesasignar ? "Unidad desasignada exitosamente" : "Unidad asignada exitosamente",
+                id_chofer: targetChoferId,
+                id_unidad: targetUnidadId
+            });
+        } catch (err) {
+            console.error("❌ Error en /api/dash/asignar-unidad:", err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
     return router;
 }
 
