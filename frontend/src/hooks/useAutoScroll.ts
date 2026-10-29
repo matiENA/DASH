@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useDashStore } from '../store/useDashStore';
 
-export function useAutoScroll(containerId: string) {
+export function useAutoScroll(
+  target: string | React.RefObject<HTMLElement | null>,
+  deps: any[] = []
+) {
   const { modoCartelera } = useDashStore();
   const isPausedRef = useRef(false);
   const lastPauseTimeRef = useRef(0);
@@ -9,7 +12,10 @@ export function useAutoScroll(containerId: string) {
   useEffect(() => {
     if (!modoCartelera) return;
 
-    const track = document.getElementById(containerId);
+    const track = typeof target === 'string'
+      ? document.getElementById(target)
+      : target.current;
+
     if (!track) return;
 
     const pause = () => {
@@ -24,7 +30,7 @@ export function useAutoScroll(containerId: string) {
     track.addEventListener('mouseenter', pause);
     track.addEventListener('mouseleave', resume);
 
-    let touchPauseTimeout: any = null;
+    let touchPauseTimeout: ReturnType<typeof setTimeout> | null = null;
     const handleTouchStart = () => {
       pause();
       if (touchPauseTimeout) clearTimeout(touchPauseTimeout);
@@ -44,10 +50,12 @@ export function useAutoScroll(containerId: string) {
       }
       if (isPausedRef.current) return;
 
-      const cards = Array.from(track.querySelectorAll('article'));
+      const cards = Array.from(track.querySelectorAll('article')) as HTMLElement[];
       if (!cards || cards.length <= 1) return;
 
-      const isHorizontal = track.classList.contains('overflow-x-auto');
+      const isHorizontal =
+        track.classList.contains('overflow-x-auto') ||
+        track.scrollWidth > track.clientWidth + 10;
 
       if (isHorizontal) {
         if (track.scrollWidth <= track.clientWidth + 5) return;
@@ -98,10 +106,11 @@ export function useAutoScroll(containerId: string) {
 
     return () => {
       clearInterval(interval);
+      if (touchPauseTimeout) clearTimeout(touchPauseTimeout);
       track.removeEventListener('mouseenter', pause);
       track.removeEventListener('mouseleave', resume);
       track.removeEventListener('touchstart', handleTouchStart);
       track.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [containerId, modoCartelera]);
+  }, [target, modoCartelera, ...deps]);
 }

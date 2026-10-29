@@ -9,7 +9,7 @@ const isLocal = typeof window !== 'undefined' &&
 
 const SOCKET_URL = (import.meta as any).env?.VITE_SOCKET_URL ||
   (import.meta as any).env?.VITE_API_URL ||
-  (isLocal ? 'http://localhost:3005' : 'https://dash-backend.onrender.com');
+  (isLocal ? 'http://localhost:3005' : 'https://dash-backend-mba1.onrender.com');
 
 export function useDash() {
   const { setTerminales, setServicios } = useDashStore();

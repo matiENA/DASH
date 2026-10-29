@@ -6,7 +6,6 @@ import { Header } from './components/layout/Header';
 import { KanbanBoard } from './components/kanban/KanbanBoard';
 import { ServiceDropOverlay } from './components/kanban/ServiceDropOverlay';
 import { NoveltyModal } from './components/modals/NoveltyModal';
-import { FloatingActionButton } from './components/layout/FloatingActionButton';
 import { LoginWall } from './components/layout/LoginWall';
 import { Toaster, toast } from 'sonner';
 
@@ -107,9 +106,6 @@ export const App: React.FC = () => {
           />
         )}
       </main>
-
-      {/* Botón Flotante para Reportar Novedad */}
-      <FloatingActionButton />
 
       {/* Modal de 2 Pasos para Crear / Editar Novedad */}
       <NoveltyModal

@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Folder, User, MessageSquare } from 'lucide-react';
 import { Novedad, FlotaItem, Usuario, RetornoItem } from '../../types/dash';
 import { useDashStore } from '../../store/useDashStore';
+import { useAutoScroll } from '../../hooks/useAutoScroll';
 import { LibresRow } from './LibresRow';
 import { ReturnColumn } from './ReturnColumn';
 import { ColumnSplitter } from './ColumnSplitter';
@@ -50,6 +51,81 @@ const CATEGORIAS_CONFIG: Record<
     colorText: 'text-[#D28976]',
     borderColor: 'border-[#D28976]'
   }
+};
+
+interface KanbanCategoryColumnProps {
+  catKey: string;
+  cat: { titulo: string; colorText: string; borderColor: string };
+  items: Novedad[];
+  flexWeight: number;
+  usuarios: Usuario[];
+  onResolver: (id: number | string, nuevoServicio?: string) => void;
+  onEditar?: (novedad: Novedad) => void;
+  onCambiarTerminal?: (id: number | string, terminal: string, terminal_id?: string | null) => void;
+  onCambiarServicio?: (id: number | string, servicio: string) => void;
+  onAgregarMencion?: (id: number | string, usuario: string) => void;
+  onQuitarMencion?: (id: number | string, usuario: string) => void;
+}
+
+const KanbanCategoryColumn: React.FC<KanbanCategoryColumnProps> = ({
+  catKey,
+  cat,
+  items,
+  flexWeight,
+  usuarios,
+  onResolver,
+  onEditar,
+  onCambiarTerminal,
+  onCambiarServicio,
+  onAgregarMencion,
+  onQuitarMencion
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useAutoScroll(scrollRef, [items.length]);
+
+  return (
+    <section
+      data-cat={catKey}
+      style={{ flex: `${flexWeight} 1 0%`, minWidth: '130px' }}
+      className={`resizable-column flex-1 border-2 border-dashed ${cat.borderColor} rounded-2xl p-3 bg-transparent flex flex-col h-full min-h-0 overflow-hidden transition-all duration-100 relative`}
+    >
+      {/* Título de Columna */}
+      <div className="w-full mb-2 shrink-0 flex items-center justify-center pb-1 border-b border-slate-200/40 dark:border-slate-800/40">
+        <h2
+          className={`text-[11px] font-black uppercase tracking-widest ${cat.colorText} text-center flex-1 select-none truncate`}
+        >
+          {cat.titulo}
+        </h2>
+      </div>
+
+      {/* Lista de Tarjetas */}
+      <div
+        ref={scrollRef}
+        id={`carrusel-cat-${catKey}`}
+        className="flex flex-col gap-3.5 overflow-y-auto custom-scrollbar pr-1.5 pb-2 h-full min-h-0 flex-1"
+      >
+        {items.length === 0 ? (
+          <div className="flex-1 flex justify-center items-center text-slate-400 text-xs font-bold opacity-70 select-none">
+            Sin novedades cargadas
+          </div>
+        ) : (
+          items.map((nov) => (
+            <NoveltyCard
+              key={nov.id}
+              novedad={nov}
+              usuarios={usuarios}
+              onResolver={onResolver}
+              onEditar={onEditar}
+              onCambiarTerminal={onCambiarTerminal}
+              onCambiarServicio={onCambiarServicio}
+              onAgregarMencion={onAgregarMencion}
+              onQuitarMencion={onQuitarMencion}
+            />
+          ))
+        )}
+      </div>
+    </section>
+  );
 };
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -276,44 +352,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
           return (
             <React.Fragment key={key}>
-              <section
-                data-cat={key}
-                style={{ flex: `${flexWeight} 1 0%`, minWidth: '130px' }}
-                className={`resizable-column flex-1 border-2 border-dashed ${cat.borderColor} rounded-2xl p-3 bg-transparent flex flex-col h-full min-h-0 overflow-hidden transition-all duration-100 relative`}
-              >
-                {/* Título de Columna */}
-                <div className="w-full mb-2 shrink-0 flex items-center justify-center pb-1 border-b border-slate-200/40 dark:border-slate-800/40">
-                  <h2
-                    className={`text-[11px] font-black uppercase tracking-widest ${cat.colorText} text-center flex-1 select-none truncate`}
-                  >
-                    {cat.titulo}
-                  </h2>
-                </div>
-
-                {/* Lista de Tarjetas */}
-                <div className="flex flex-col gap-3.5 overflow-y-auto custom-scrollbar pr-1.5 pb-2 h-full min-h-0 flex-1">
-                  {items.length === 0 ? (
-                    <div className="flex-1 flex justify-center items-center text-slate-400 text-xs font-bold opacity-70 select-none">
-                      Sin novedades cargadas
-                    </div>
-                  ) : (
-                    items.map((nov) => (
-                      <NoveltyCard
-                        key={nov.id}
-                        novedad={nov}
-                        usuarios={usuarios}
-                        onResolver={onResolver}
-                        onEditar={onEditar}
-                        onCambiarTerminal={onCambiarTerminal}
-                        onCambiarServicio={onCambiarServicio}
-                        onAgregarMencion={onAgregarMencion}
-                        onQuitarMencion={onQuitarMencion}
-                      />
-                    ))
-                  )}
-                </div>
-              </section>
-
+              <KanbanCategoryColumn
+                catKey={key}
+                cat={cat}
+                items={items}
+                flexWeight={flexWeight}
+                usuarios={usuarios}
+                onResolver={onResolver}
+                onEditar={onEditar}
+                onCambiarTerminal={onCambiarTerminal}
+                onCambiarServicio={onCambiarServicio}
+                onAgregarMencion={onAgregarMencion}
+                onQuitarMencion={onQuitarMencion}
+              />
               {isNotLast && <ColumnSplitter leftKey={key} rightKey={nextKey} />}
             </React.Fragment>
           );

@@ -2,6 +2,10 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import { useDashStore } from '../../store/useDashStore';
 
+/**
+ * @deprecated Reubicado a Header.tsx como botón contiguo a las pestañas
+ * para evitar superponer contenedores y badges en el Kanban inferior derecho.
+ */
 export const FloatingActionButton: React.FC = () => {
   const { modoCartelera, setModalNuevaAbierto, setNovedadEnEdicion, sesion } = useDashStore();
 

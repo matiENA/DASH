@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { RetornoItem, FlotaItem } from '../../types/dash';
-import { formatearPatente } from '../common/PatenteMercosur';
+import { PatenteMercosur } from '../common/PatenteMercosur';
+import { useAutoScroll } from '../../hooks/useAutoScroll';
 
 interface ReturnColumnProps {
   retornos: RetornoItem[];
@@ -123,6 +124,9 @@ export const ReturnColumn: React.FC<ReturnColumnProps> = ({
     return { vuelvenHoy: hoy, vuelvenManana: manana };
   }, [retornos, flota]);
 
+  // Autoscroll para modo cartelera (TV)
+  useAutoScroll('carrusel-cat-vuelve', [vuelvenHoy.length, vuelvenManana.length]);
+
   if (vuelvenHoy.length === 0 && vuelvenManana.length === 0) {
     return null;
   }
@@ -153,7 +157,10 @@ export const ReturnColumn: React.FC<ReturnColumnProps> = ({
       </div>
 
       {/* Lista scrolleable */}
-      <div className="flex flex-col gap-2.5 overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0">
+      <div
+        id="carrusel-cat-vuelve"
+        className="flex flex-col gap-2.5 overflow-y-auto custom-scrollbar pr-1 pb-2 flex-1 min-h-0"
+      >
         {/* SUBSECCIÓN 1: VUELVEN HOY */}
         {vuelvenHoy.length > 0 && (
           <>
@@ -174,9 +181,9 @@ export const ReturnColumn: React.FC<ReturnColumnProps> = ({
                     {ch.nom}
                   </span>
                   {ch.tractor && (
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">
-                      {formatearPatente(ch.tractor)}
-                    </span>
+                    <div className="mt-0.5">
+                      <PatenteMercosur patente={ch.tractor} />
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -209,9 +216,9 @@ export const ReturnColumn: React.FC<ReturnColumnProps> = ({
                     {ch.nom}
                   </span>
                   {ch.tractor && (
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">
-                      {formatearPatente(ch.tractor)}
-                    </span>
+                    <div className="mt-0.5">
+                      <PatenteMercosur patente={ch.tractor} />
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">

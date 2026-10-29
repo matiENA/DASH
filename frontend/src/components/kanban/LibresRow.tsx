@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Check, X } from 'lucide-react';
 import { Novedad, FlotaItem, Usuario } from '../../types/dash';
 import { useDashStore } from '../../store/useDashStore';
+import { useAutoScroll } from '../../hooks/useAutoScroll';
 import { QuickAddLibre } from './QuickAddLibre';
 import { NoveltyCard } from './NoveltyCard';
 
@@ -53,6 +54,9 @@ export const LibresRow: React.FC<LibresRowProps> = ({
     top: number;
     left: number;
   } | null>(null);
+
+  // Autoscroll para modo cartelera (TV)
+  useAutoScroll('carrusel-cat-libres', [novedadesLibres.length]);
 
   // Cerrar menú al hacer clic fuera del dropdown
   useEffect(() => {
