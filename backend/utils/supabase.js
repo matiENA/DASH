@@ -1,4 +1,6 @@
 require('dotenv').config();
+const { spawn } = require('child_process');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const { normalizar, normalizarComparacion } = require('./normalizar');
 
@@ -14,6 +16,40 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 console.log(`🐘 [Supabase] Cliente conectado a: ${SUPABASE_URL}`);
+
+/**
+ * Dispara el worker de sincronización de bajas en segundo plano (asíncrono / no bloqueante)
+ */
+function dispararSyncBajas() {
+    try {
+        const scriptPath = path.resolve('C:\\Users\\Matias Rodriguez\\Documents\\server_local\\operativas_diarias\\sync_bajas_movimientos.py');
+        console.log(`🛰️ [Sync Bajas] Disparando worker de bajas en segundo plano: ${scriptPath}`);
+        const proc = spawn('py', ['-3.13', scriptPath], {
+            detached: true,
+            stdio: 'ignore'
+        });
+        proc.unref();
+    } catch (err) {
+        console.warn("⚠️ [Sync Bajas] Error disparando worker asíncrono:", err.message);
+    }
+}
+
+/**
+ * Consulta el catálogo de tipos de novedad desde public.tipos_novedad
+ */
+async function fetchTiposNovedad() {
+    const { data, error } = await supabase
+        .from('tipos_novedad')
+        .select('*')
+        .eq('activo', true)
+        .order('orden', { ascending: true });
+
+    if (error) {
+        console.warn("⚠️ [Supabase] No se pudo cargar tipos_novedad:", error.message);
+        return [];
+    }
+    return data || [];
+}
 
 /**
  * Sanitiza valores de fecha para evitar el error de PostgreSQL 22007 (string vacío a DATE)
@@ -271,6 +307,10 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
             console.error("❌ [Supabase] Error en update novedad (resolver):", error.message);
             throw error;
         }
+
+        // Si la novedad resuelta correspondía a una baja de diagrama, disparar sincronización para refrescar notas
+        dispararSyncBajas();
+
         return data;
     }
 
@@ -292,8 +332,26 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
             sharedState
         });
 
+        // Resolver tipo_novedad_id relacional
+        let tipoNovId = payload.tipo_novedad_id || null;
+        let imprimeNotas = false;
+        try {
+            const { data: tRow } = await supabase
+                .from('tipos_novedad')
+                .select('id, imprime_nota_movimientos')
+                .eq('codigo', tipoNov)
+                .limit(1);
+            if (tRow && tRow.length > 0) {
+                tipoNovId = tRow[0].id;
+                imprimeNotas = Boolean(tRow[0].imprime_nota_movimientos);
+            }
+        } catch (e) {
+            // Silencioso
+        }
+
         const insertData = {
             tipo_novedad: tipoNov,
+            tipo_novedad_id: tipoNovId,
             fecha_objetivo: sanitizarFecha(payload.fecha_objetivo || payload.fecha),
             detalle: payload.detalle || '',
             resuelto: false,
@@ -313,6 +371,11 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
             console.error("❌ [Supabase] Error en insert novedad:", error.message);
             throw error;
         }
+
+        if (imprimeNotas || tipoNov === 'BAJA_DIAGRAMA') {
+            dispararSyncBajas();
+        }
+
         return data;
     }
 
@@ -325,6 +388,16 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
         if (payload.fecha_objetivo !== undefined) updates.fecha_objetivo = sanitizarFecha(payload.fecha_objetivo);
         if (payload.tipo_novedad !== undefined) {
             updates.tipo_novedad = payload.tipo_novedad;
+            try {
+                const { data: tRow } = await supabase
+                    .from('tipos_novedad')
+                    .select('id')
+                    .eq('codigo', payload.tipo_novedad)
+                    .limit(1);
+                if (tRow && tRow.length > 0) {
+                    updates.tipo_novedad_id = tRow[0].id;
+                }
+            } catch (e) {}
             // Si la novedad no es de tipo LIBRES, se asegura que terminal_id sea null
             if (payload.tipo_novedad !== 'LIBRES') {
                 updates.terminal_id = null;
@@ -544,6 +617,8 @@ module.exports = {
     fetchTerminales,
     fetchServiciosChoferes,
     fetchUsuarios,
+    fetchTiposNovedad,
+    dispararSyncBajas,
     dispatchNovedad,
     asignarTerminalNovedad,
     gestionarMencionNovedad,

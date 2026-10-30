@@ -1,5 +1,5 @@
 const express = require('express');
-const { fetchFlota, fetchNovedades, fetchRetorno, fetchUsuarios, fetchTerminales, fetchServiciosChoferes } = require('../utils/supabase');
+const { fetchFlota, fetchNovedades, fetchRetorno, fetchUsuarios, fetchTerminales, fetchServiciosChoferes, fetchTiposNovedad } = require('../utils/supabase');
 const { normalizarComparacion } = require('../utils/normalizar');
 
 function createDashRouter(sharedState, ioDash) {
@@ -533,6 +533,17 @@ function createDashRouter(sharedState, ioDash) {
             });
         } catch (err) {
             console.error("❌ Error en /api/dash/asignar-unidad:", err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // GET /api/dash/tipos-novedad — Catálogo de tipos de novedad oficiales
+    router.get('/tipos-novedad', async (req, res) => {
+        try {
+            const tipos = await fetchTiposNovedad();
+            res.json({ success: true, count: tipos.length, data: tipos });
+        } catch (err) {
+            console.error("❌ Error en GET /api/dash/tipos-novedad:", err.message);
             res.status(500).json({ success: false, error: err.message });
         }
     });

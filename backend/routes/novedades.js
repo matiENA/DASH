@@ -3,7 +3,8 @@ const {
     fetchNovedades,
     dispatchNovedad,
     asignarTerminalNovedad,
-    gestionarMencionNovedad
+    gestionarMencionNovedad,
+    dispararSyncBajas
 } = require('../utils/supabase');
 
 function createNovedadesRouter(sharedState, ioDash) {
@@ -104,6 +105,16 @@ function createNovedadesRouter(sharedState, ioDash) {
             res.json({ success: true });
         } catch (err) {
             console.error("❌ Error en POST /api/novedades/terminal:", err.message);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // POST /api/novedades/sync-bajas — Fuerza la sincronización de hover notes de bajas a Movimientos
+    router.post('/sync-bajas', (req, res) => {
+        try {
+            dispararSyncBajas();
+            res.json({ success: true, message: 'Sincronización de bajas disparada en segundo plano.' });
+        } catch (err) {
             res.status(500).json({ success: false, error: err.message });
         }
     });
