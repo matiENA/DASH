@@ -1,8 +1,8 @@
 require('dotenv').config();
-const { spawn } = require('child_process');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const { normalizar, normalizarComparacion } = require('./normalizar');
+const { syncBajasGoogleSheets } = require('./googleSheetsSync');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rsvajuxihvmpmrmlcbul.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_publishable_n97mVkSclRpuv_OsseO3gg_BjR9QT3R';
@@ -18,20 +18,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 console.log(`🐘 [Supabase] Cliente conectado a: ${SUPABASE_URL}`);
 
 /**
- * Dispara el worker de sincronización de bajas en segundo plano (asíncrono / no bloqueante)
+ * Dispara la sincronización nativa de bajas hacia Google Sheets en segundo plano (asíncrono / no bloqueante)
  */
-function dispararSyncBajas() {
-    try {
-        const scriptPath = path.resolve('C:\\Users\\Matias Rodriguez\\Documents\\server_local\\operativas_diarias\\sync_bajas_movimientos.py');
-        console.log(`🛰️ [Sync Bajas] Disparando worker de bajas en segundo plano: ${scriptPath}`);
-        const proc = spawn('py', ['-3.13', scriptPath], {
-            detached: true,
-            stdio: 'ignore'
+function dispararSyncBajas(contexto = null) {
+    setImmediate(() => {
+        syncBajasGoogleSheets(contexto, supabase).catch(err => {
+            console.warn("⚠️ [Sync Bajas] Error en sync nativo de Google Sheets:", err.message);
         });
-        proc.unref();
-    } catch (err) {
-        console.warn("⚠️ [Sync Bajas] Error disparando worker asíncrono:", err.message);
-    }
+    });
 }
 
 /**
@@ -373,7 +367,14 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
         }
 
         if (imprimeNotas || tipoNov === 'BAJA_DIAGRAMA') {
-            dispararSyncBajas();
+            dispararSyncBajas({
+                chofer_id: insertData.chofer_id,
+                chofer_nombre: relaciones.chofer_nombre || payload.nom || payload.chofer || null,
+                fecha_objetivo: insertData.fecha_objetivo,
+                tipo_novedad: tipoNov,
+                tipo_novedad_titulo: payload.tipo_novedad_titulo || tipoNov,
+                detalle: insertData.detalle
+            });
         }
 
         return data;
@@ -455,6 +456,11 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
             console.error("❌ [Supabase] Error en update novedad (editar):", error.message);
             throw error;
         }
+
+        if (updates.tipo_novedad === 'BAJA_DIAGRAMA' || updates.fecha_objetivo || payload.tipo_novedad === 'BAJA_DIAGRAMA') {
+            dispararSyncBajas(null);
+        }
+
         return data;
     }
 

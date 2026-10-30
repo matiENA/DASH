@@ -23,6 +23,8 @@ frontend/*.tsbuildinfo
 .env.*.local
 backend/.env
 frontend/.env
+*credentials*.json
+*.pem
 
 # Logs y temporales
 *.log
