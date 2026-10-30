@@ -75,6 +75,8 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
 }) => {
   const { modoCartelera, setActiveDragCardId, terminales, servicios } = useDashStore();
   const [fadingOut, setFadingOut] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
 
   // Dropdowns contextuales
   const [dropTerminalAbierto, setDropTerminalAbierto] = useState(false);
@@ -87,6 +89,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setIsPinned(false);
         setDropTerminalAbierto(false);
         setDropServicioAbierto(false);
         setDropMencionAbierto(false);
@@ -96,6 +99,20 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (modoCartelera) return;
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') ||
+      target.closest('input') ||
+      target.closest('.btn-mention-remove') ||
+      target.closest('.mention-input-wrapper')
+    ) {
+      return;
+    }
+    setIsPinned((prev) => !prev);
+  };
+
   const handleResolverClick = () => {
     if (modoCartelera || novedad.resuelto) return;
     setFadingOut(true);
@@ -103,6 +120,18 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
       onResolver(novedad.id);
     }, 150);
   };
+
+  const extraerDigitosPatente = (patenteRaw?: string | null): string => {
+    if (!patenteRaw) return '';
+    const digits = patenteRaw.replace(/\D/g, '');
+    if (digits.length >= 3) return digits.slice(-3);
+    return digits;
+  };
+
+  const displayUte =
+    novedad.n_ute && novedad.n_ute.trim() !== '' && novedad.n_ute.trim() !== 'S/D'
+      ? novedad.n_ute.trim()
+      : extraerDigitosPatente(novedad.tractor) || 'S/D';
 
   const formatearFecha = (ts?: string, id?: string | number) => {
     let d = ts ? new Date(ts) : null;
@@ -145,15 +174,26 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
 
   // ==========================================
   // RENDER: TARJETA TIPO "LIBRES" (CYAN #00FFFF)
+  // Despliegue Horizontal Smooth: Colapsado (Figma 1076:876) vs Expandido (Figma 1072:690)
   // ==========================================
   if (esLibre) {
-    const tieneDetalle = novedad.detalle && novedad.detalle.trim().length > 0;
+    const tieneDetalle = Boolean(novedad.detalle && novedad.detalle.trim().length > 0);
     const termItem = (terminales || []).find(
-      (t) => (novedad.terminal_id && t.id === novedad.terminal_id) || (t.codigo && t.codigo.toUpperCase() === (novedad.terminal || '').toUpperCase())
+      (t) =>
+        (novedad.terminal_id && t.id === novedad.terminal_id) ||
+        (t.codigo && t.codigo.toUpperCase() === (novedad.terminal || '').toUpperCase())
     );
     const termColor = termItem
-      ? { bg: termItem.color_bg || CONFIG_TERMINALES[termItem.codigo]?.bg || '#DD7E6B', text: termItem.color_text || CONFIG_TERMINALES[termItem.codigo]?.text || '#000000' }
+      ? {
+          bg: termItem.color_bg || CONFIG_TERMINALES[termItem.codigo]?.bg || '#DD7E6B',
+          text: termItem.color_text || CONFIG_TERMINALES[termItem.codigo]?.text || '#000000'
+        }
       : CONFIG_TERMINALES[(novedad.terminal || '').toUpperCase().trim()];
+
+    const isExpanded =
+      !modoCartelera &&
+      (isHovered || isPinned || dropTerminalAbierto || dropServicioAbierto || dropMencionAbierto);
+
     return (
       <article
         ref={cardRef}
@@ -167,15 +207,46 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
             setActiveDragCardId(novedad.id);
           }, 30);
         }}
-        className={`rounded-xl p-3 relative transition-all duration-300 w-max min-w-[340px] max-w-[440px] shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md bg-[#00FFFF] border-0 select-none ${
-          modoCartelera ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
-        } ${tieneDetalle ? 'min-h-[90px] py-3' : 'min-h-[85px] py-2.5'} ${
+        onMouseEnter={() => !modoCartelera && setIsHovered(true)}
+        onMouseLeave={() => !modoCartelera && setIsHovered(false)}
+        onClick={handleCardClick}
+        className={`rounded-xl relative transition-[width,min-width,max-width,box-shadow] duration-300 ease-in-out shrink-0 flex items-center bg-[#00FFFF] border-0 select-none shadow-sm hover:shadow-md ${
+          modoCartelera ? 'cursor-default' : 'cursor-pointer active:cursor-grabbing'
+        } ${
+          isExpanded
+            ? 'w-[428px] min-w-[428px] max-w-[440px] p-2.5 gap-2.5'
+            : 'w-[124px] min-w-[124px] max-w-[124px] p-2 justify-center'
+        } ${tieneDetalle && isExpanded ? 'min-h-[86px] h-auto' : 'h-[86px] min-h-[86px]'} ${
           fadingOut ? 'fade-out' : ''
         }`}
       >
-        <div className="card-inner-content flex flex-col w-full">
-          {/* Header de tarjeta: Conductor + Botones */}
-          <div className="flex items-start justify-between w-full -mt-0.5 mb-1">
+        {/* Columna Izquierda: Caja UTE con transición morfológica suave */}
+        <div
+          className={`transition-all duration-300 ease-in-out flex items-center justify-center shrink-0 ${
+            isExpanded
+              ? 'w-[86px] h-[74px] border border-black rounded-[4px] bg-transparent'
+              : 'w-full h-full border border-transparent'
+          }`}
+        >
+          <span
+            className={`font-black text-black leading-none tracking-tight select-none transition-all duration-300 ${
+              isExpanded ? 'text-[34px] font-extrabold' : 'text-[46px] font-black'
+            }`}
+          >
+            {displayUte}
+          </span>
+        </div>
+
+        {/* Columna Derecha: Contenido completo con fade & slide horizontal */}
+        <div
+          className={`transition-all duration-200 ease-out flex flex-col justify-between ${
+            isExpanded
+              ? 'flex-1 min-w-[310px] opacity-100 translate-x-0 pointer-events-auto delay-75'
+              : 'w-0 max-w-0 opacity-0 -translate-x-2 pointer-events-none overflow-hidden'
+          } ${tieneDetalle ? 'py-0.5' : 'h-[74px]'}`}
+        >
+          {/* Fila 1: Conductor + Botones de Acción */}
+          <div className="flex items-center justify-between w-full -mt-0.5 mb-1">
             <h3 className="font-extrabold text-black text-[14px] leading-tight uppercase truncate tracking-tight flex-1 pr-1">
               {novedad.nom || 'SIN CONDUCTOR'}
             </h3>
@@ -184,7 +255,10 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
               <div className="flex items-center gap-1 shrink-0 -mt-1 -mr-1">
                 {onEditar && (
                   <button
-                    onClick={() => onEditar(novedad)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditar(novedad);
+                    }}
                     className="btn-card-edit w-7 h-7 rounded-lg shrink-0 transition-all flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 cursor-pointer active:scale-95 text-xs font-bold"
                     title="Editar detalle"
                   >
@@ -192,7 +266,10 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                   </button>
                 )}
                 <button
-                  onClick={handleResolverClick}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleResolverClick();
+                  }}
                   disabled={novedad.resuelto}
                   className={`btn-card-resolve w-7 h-7 rounded-lg shrink-0 transition-all flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 text-xs font-bold ${
                     novedad.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-95'
@@ -205,7 +282,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
             )}
           </div>
 
-          {/* Badges operativos (Servicio, UTE, Tractor, Cisternado, Terminal) */}
+          {/* Fila 2: Badges operativos (Servicio, PatenteMercosur, Cisternado, Terminal) */}
           <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap w-max text-xs">
             {/* Servicio Chofer Real */}
             <span
@@ -216,17 +293,10 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
               {novedad.srv || novedad.servicio || 'S/A'}
             </span>
 
-            {/* UTE */}
-            {novedad.n_ute && novedad.n_ute !== 'S/D' && (
-              <span className="border border-black rounded px-1.5 py-0.5 text-[10px] font-black text-black leading-none shrink-0">
-                {novedad.n_ute}
-              </span>
-            )}
-
             {/* Tractor Patente Mercosur */}
             <PatenteMercosur patente={novedad.tractor} />
 
-            {/* Cisternado */}
+            {/* Cisternado (Aclaración: No quitar) */}
             {novedad.cisternado && (
               <span className="text-[11px] font-black text-black tracking-tight select-all shrink-0">
                 {novedad.cisternado}
@@ -239,6 +309,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                 <button
                   type="button"
                   onClick={(e) => {
+                    e.stopPropagation();
                     if (modoCartelera) return;
                     if (onRequestTerminalMenu) {
                       onRequestTerminalMenu(novedad, e.currentTarget);
@@ -257,6 +328,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                   <button
                     type="button"
                     onClick={(e) => {
+                      e.stopPropagation();
                       if (onRequestTerminalMenu) {
                         onRequestTerminalMenu(novedad, e.currentTarget);
                       } else {
@@ -275,7 +347,13 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                 <div className="absolute left-0 bottom-full mb-1 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 w-36 max-h-56 overflow-y-auto custom-scrollbar animate-in fade-in duration-100">
                   {(terminales && terminales.length > 0
                     ? terminales
-                    : Object.keys(CONFIG_TERMINALES).map((t) => ({ id: '', codigo: t, nombre: t, color_bg: CONFIG_TERMINALES[t].bg, color_text: CONFIG_TERMINALES[t].text }))
+                    : Object.keys(CONFIG_TERMINALES).map((t) => ({
+                        id: '',
+                        codigo: t,
+                        nombre: t,
+                        color_bg: CONFIG_TERMINALES[t].bg,
+                        color_text: CONFIG_TERMINALES[t].text
+                      }))
                   ).map((t) => {
                     const c = {
                       bg: t.color_bg || CONFIG_TERMINALES[t.codigo]?.bg || '#475569',
@@ -313,25 +391,25 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
             </div>
           </div>
 
-          {/* Detalle */}
+          {/* Detalle (si existe) */}
           {tieneDetalle && (
-            <div className="mt-2 bg-black/10 rounded-lg p-2.5 overflow-y-auto custom-scrollbar max-h-24">
-              <p className="text-black text-xs font-bold font-zilla leading-tight whitespace-pre-line break-words">
+            <div className="mt-1 bg-black/10 rounded-lg p-2 overflow-y-auto custom-scrollbar max-h-20">
+              <p className="text-black text-[11px] font-bold font-zilla leading-tight whitespace-pre-line break-words">
                 {novedad.detalle}
               </p>
             </div>
           )}
 
-          {/* Footer: Creador, Menciones, Timestamp */}
-          <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-black text-black uppercase mt-2">
+          {/* Fila 3 / Footer: Creador, Menciones, Timestamp */}
+          <div className="flex items-center gap-1.5 text-[10px] font-black text-black uppercase mt-1">
             <span className="flex items-center gap-1 shrink-0">
               <User className="w-3 h-3 text-black/70 stroke-[2.2]" />
-              <span>{novedad.creador || novedad.usuario || 'USER'}</span>
+              <span className="truncate max-w-[80px]">{novedad.creador || novedad.usuario || 'OPERADOR'}</span>
             </span>
 
             {/* Menciones inline */}
             {!modoCartelera && (
-              <div className="relative inline-block mention-input-wrapper">
+              <div className="relative inline-block mention-input-wrapper shrink-0" onClick={(e) => e.stopPropagation()}>
                 <input
                   type="text"
                   value={textoMencion}
@@ -341,7 +419,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                   }}
                   onFocus={() => setDropMencionAbierto(true)}
                   placeholder="@"
-                  className="bg-black/10 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-black w-14 outline-none focus:bg-black/20 focus:w-20 transition-all placeholder:text-black/40"
+                  className="bg-black/10 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-black w-12 outline-none focus:bg-black/20 focus:w-16 transition-all placeholder:text-black/40"
                 />
 
                 {dropMencionAbierto && usuariosFiltrados.length > 0 && (
@@ -368,13 +446,16 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
             {(novedad.menciones || []).map((m) => (
               <span
                 key={m}
-                className="bg-black/20 text-black px-2 py-0.5 rounded-md font-black uppercase flex items-center gap-1"
+                className="bg-black/20 text-black px-1.5 py-0.5 rounded font-black uppercase flex items-center gap-1 shrink-0 text-[9px]"
               >
                 @{m}
                 {!modoCartelera && onQuitarMencion && (
                   <button
-                    onClick={() => onQuitarMencion(novedad.id, m)}
-                    className="btn-mention-remove ml-1 hover:text-red-700 transition-colors cursor-pointer inline-flex items-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onQuitarMencion(novedad.id, m);
+                    }}
+                    className="btn-mention-remove ml-0.5 hover:text-red-700 transition-colors cursor-pointer inline-flex items-center"
                     title="Quitar mención"
                   >
                     <X className="w-2.5 h-2.5 stroke-[2.5]" />
@@ -383,7 +464,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
               </span>
             ))}
 
-            <span className="text-black/60 font-bold tracking-wide ml-auto flex items-center gap-1">
+            <span className="text-black/60 font-bold tracking-wide ml-auto flex items-center gap-1 shrink-0 whitespace-nowrap">
               <Clock className="w-3 h-3 text-black/60 stroke-[2] shrink-0" />
               {formatearFecha(novedad.timestamp || novedad.creado_el, novedad.id)}
             </span>

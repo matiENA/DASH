@@ -3,7 +3,7 @@ import { Plus, Search } from 'lucide-react';
 import { useDashStore } from '../../store/useDashStore';
 import { FlotaItem } from '../../types/dash';
 import { api } from '../../services/api';
-import { formatearPatente } from '../common/PatenteMercosur';
+import { PatenteMercosur } from '../common/PatenteMercosur';
 
 interface QuickAddLibreProps {
   flota: FlotaItem[];
@@ -130,10 +130,8 @@ export const QuickAddLibre: React.FC<QuickAddLibreProps> = ({
                       UTE: {c.n_ute || 'S/D'} • {c.srv || c.srv_chofer || 'S/A'}
                     </span>
                   </div>
-                  <div className="flex flex-col items-end shrink-0">
-                    <span className="font-black text-cyan-600 dark:text-cyan-400 text-xs tracking-wide uppercase font-mono">
-                      {formatearPatente(c.tractor) || 'S/D'}
-                    </span>
+                  <div className="flex flex-col items-end shrink-0 ml-2">
+                    <PatenteMercosur patente={c.tractor} />
                   </div>
                 </div>
               ))

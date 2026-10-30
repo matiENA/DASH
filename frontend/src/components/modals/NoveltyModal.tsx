@@ -3,7 +3,7 @@ import { X, ArrowLeft, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { FlotaItem, Novedad } from '../../types/dash';
 import { api } from '../../services/api';
 import { useDashStore } from '../../store/useDashStore';
-import { formatearPatente } from '../common/PatenteMercosur';
+import { formatearPatente, PatenteMercosur } from '../common/PatenteMercosur';
 
 interface NoveltyModalProps {
   abierto: boolean;
@@ -324,11 +324,9 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
                             UTE: {item.n_ute || 'S/D'}
                           </span>
                         </div>
-                        <div className="text-right">
-                          <span className="font-black text-indigo-600 dark:text-indigo-400 uppercase font-mono">
-                            {formatearPatente(item.tractor) || 'S/D'}
-                          </span>
-                          <span className="text-[9px] block text-slate-400 uppercase font-bold">
+                        <div className="flex flex-col items-end shrink-0 gap-1 ml-2">
+                          <PatenteMercosur patente={item.tractor} />
+                          <span className="text-[9px] block text-slate-400 dark:text-slate-500 uppercase font-bold">
                             {item.srv || item.srv_chofer || 'S/A'}
                           </span>
                         </div>
