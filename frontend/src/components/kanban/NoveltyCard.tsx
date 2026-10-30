@@ -210,7 +210,21 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
         onMouseEnter={() => !modoCartelera && setIsHovered(true)}
         onMouseLeave={() => !modoCartelera && setIsHovered(false)}
         onClick={handleCardClick}
-        className={`rounded-xl relative transition-[width,min-width,max-width,box-shadow] duration-300 ease-in-out shrink-0 flex items-center bg-[#00FFFF] border-0 select-none shadow-sm hover:shadow-md ${
+        onKeyDown={(e) => {
+          if (modoCartelera) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            const target = e.target as HTMLElement;
+            if (target === cardRef.current) {
+              e.preventDefault();
+              setIsPinned((prev) => !prev);
+            }
+          }
+        }}
+        tabIndex={modoCartelera ? -1 : 0}
+        role="button"
+        aria-expanded={isExpanded}
+        aria-label={`Unidad libre UTE ${displayUte}, ${novedad.nom || 'sin conductor asignado'}, servicio ${novedad.srv || novedad.servicio || 'sin asignar'}`}
+        className={`rounded-xl relative transition-[width,min-width,max-width,box-shadow] duration-300 ease-in-out motion-reduce:transition-none shrink-0 flex items-center bg-[#00FFFF] border-0 select-none shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden ${
           modoCartelera ? 'cursor-default' : 'cursor-pointer active:cursor-grabbing'
         } ${
           isExpanded
@@ -220,17 +234,15 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
           fadingOut ? 'fade-out' : ''
         }`}
       >
-        {/* Columna Izquierda: Caja UTE con transición morfológica suave */}
+        {/* Columna Izquierda: UTE (sin recuadro; aumento de 2px en hover/click de 46px a 48px) */}
         <div
-          className={`transition-all duration-300 ease-in-out flex items-center justify-center shrink-0 ${
-            isExpanded
-              ? 'w-[86px] h-[74px] border border-black rounded-[4px] bg-transparent'
-              : 'w-full h-full border border-transparent'
+          className={`transition-all duration-300 ease-in-out motion-reduce:transition-none flex items-center justify-center shrink-0 ${
+            isExpanded ? 'px-1 bg-transparent' : 'w-full h-full'
           }`}
         >
           <span
-            className={`font-black text-black leading-none tracking-tight select-none transition-all duration-300 ${
-              isExpanded ? 'text-[34px] font-extrabold' : 'text-[46px] font-black'
+            className={`font-black text-black leading-none tracking-tight select-none transition-all duration-300 motion-reduce:transition-none ${
+              isExpanded ? 'text-[48px]' : 'text-[46px]'
             }`}
           >
             {displayUte}
@@ -239,7 +251,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
 
         {/* Columna Derecha: Contenido completo con fade & slide horizontal */}
         <div
-          className={`transition-all duration-200 ease-out flex flex-col justify-between ${
+          className={`transition-all duration-200 ease-out motion-reduce:transition-none flex flex-col justify-between ${
             isExpanded
               ? 'flex-1 min-w-[310px] opacity-100 translate-x-0 pointer-events-auto delay-75'
               : 'w-0 max-w-0 opacity-0 -translate-x-2 pointer-events-none overflow-hidden'
@@ -259,8 +271,9 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                       e.stopPropagation();
                       onEditar(novedad);
                     }}
-                    className="btn-card-edit w-7 h-7 rounded-lg shrink-0 transition-all flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 cursor-pointer active:scale-95 text-xs font-bold"
+                    className="btn-card-edit w-7 h-7 rounded-lg shrink-0 transition-all flex items-center justify-center text-black hover:bg-black/15 focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-hidden cursor-pointer active:scale-95 text-xs font-bold"
                     title="Editar detalle"
+                    aria-label="Editar detalle"
                   >
                     <Pencil className="w-3.5 h-3.5 stroke-[2.2]" />
                   </button>
@@ -271,10 +284,11 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                     handleResolverClick();
                   }}
                   disabled={novedad.resuelto}
-                  className={`btn-card-resolve w-7 h-7 rounded-lg shrink-0 transition-all flex items-center justify-center text-black/70 hover:text-black hover:bg-black/10 text-xs font-bold ${
-                    novedad.resuelto ? 'cursor-default' : 'cursor-pointer active:scale-95'
+                  className={`btn-card-resolve w-7 h-7 rounded-lg shrink-0 transition-all flex items-center justify-center text-black hover:bg-black/15 focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-hidden text-xs font-bold ${
+                    novedad.resuelto ? 'cursor-default opacity-50' : 'cursor-pointer active:scale-95'
                   }`}
                   title={novedad.resuelto ? 'Ocupado' : 'Asignar / Ocupar'}
+                  aria-label={novedad.resuelto ? 'Unidad ocupada' : 'Asignar o marcar ocupada'}
                 >
                   <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                 </button>
@@ -317,9 +331,10 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                       setDropTerminalAbierto(!dropTerminalAbierto);
                     }
                   }}
-                  className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-transform active:scale-95 cursor-pointer flex items-center gap-1 shadow-xs shrink-0 whitespace-nowrap"
+                  className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-transform active:scale-95 cursor-pointer flex items-center gap-1 shadow-xs shrink-0 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-hidden"
                   style={{ backgroundColor: termColor?.bg || '#DD7E6B', color: termColor?.text || '#000000' }}
                   title="Cambiar terminal asignada"
+                  aria-label={`Terminal asignada: ${novedad.terminal}. Clic para cambiar.`}
                 >
                   {novedad.terminal}
                 </button>
@@ -335,8 +350,9 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                         setDropTerminalAbierto(!dropTerminalAbierto);
                       }
                     }}
-                    className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-black/10 text-slate-800 hover:bg-black/20 transition-all flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap"
+                    className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-black/15 text-black hover:bg-black/25 focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-hidden transition-all flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap"
                     title="Asignar terminal a unidad libre"
+                    aria-label="Asignar terminal operativa a unidad libre"
                   >
                     + TERMINAL
                   </button>
@@ -367,7 +383,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                           setDropTerminalAbierto(false);
                           onCambiarTerminal?.(novedad.id, t.codigo, t.id || null);
                         }}
-                        className="px-2 py-1 rounded text-[9px] font-black uppercase text-left transition-transform active:scale-95 cursor-pointer hover:opacity-90"
+                        className="px-2 py-1 rounded text-[9px] font-black uppercase text-left transition-transform active:scale-95 cursor-pointer hover:opacity-90 focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-hidden"
                         style={{ backgroundColor: c.bg, color: c.text }}
                       >
                         {t.codigo}
@@ -381,7 +397,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                         setDropTerminalAbierto(false);
                         onCambiarTerminal?.(novedad.id, '', null);
                       }}
-                      className="px-2 py-0.5 rounded text-[8px] font-black uppercase bg-slate-200 text-slate-700 hover:bg-rose-500 hover:text-white transition-colors inline-flex items-center gap-1"
+                      className="px-2 py-0.5 rounded text-[8px] font-black uppercase bg-slate-200 text-slate-700 hover:bg-rose-500 hover:text-white transition-colors inline-flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-hidden"
                     >
                       <X className="w-2.5 h-2.5 stroke-[2.5]" /> Quitar
                     </button>
@@ -393,8 +409,8 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
 
           {/* Detalle (si existe) */}
           {tieneDetalle && (
-            <div className="mt-1 bg-black/10 rounded-lg p-2 overflow-y-auto custom-scrollbar max-h-20">
-              <p className="text-black text-[11px] font-bold font-zilla leading-tight whitespace-pre-line break-words">
+            <div className="mt-1 bg-black/10 rounded-lg p-2 overflow-y-auto custom-scrollbar max-h-20 border border-black/10">
+              <p className="text-black text-[11px] font-extrabold font-zilla leading-tight whitespace-pre-line break-words">
                 {novedad.detalle}
               </p>
             </div>
@@ -403,8 +419,8 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
           {/* Fila 3 / Footer: Creador, Menciones, Timestamp */}
           <div className="flex items-center gap-1.5 text-[10px] font-black text-black uppercase mt-1">
             <span className="flex items-center gap-1 shrink-0">
-              <User className="w-3 h-3 text-black/70 stroke-[2.2]" />
-              <span className="truncate max-w-[80px]">{novedad.creador || novedad.usuario || 'OPERADOR'}</span>
+              <User className="w-3 h-3 text-black stroke-[2.4]" aria-hidden="true" />
+              <span className="truncate max-w-[80px] font-black">{novedad.creador || novedad.usuario || 'OPERADOR'}</span>
             </span>
 
             {/* Menciones inline */}
@@ -419,7 +435,8 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                   }}
                   onFocus={() => setDropMencionAbierto(true)}
                   placeholder="@"
-                  className="bg-black/10 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-black w-12 outline-none focus:bg-black/20 focus:w-16 transition-all placeholder:text-black/40"
+                  aria-label="Mencionar usuario con @"
+                  className="bg-black/15 border border-black/20 rounded px-1.5 py-0.5 text-[10px] font-bold text-black w-12 outline-hidden focus-visible:ring-2 focus-visible:ring-black focus:w-16 transition-all placeholder:text-black/70"
                 />
 
                 {dropMencionAbierto && usuariosFiltrados.length > 0 && (
@@ -446,7 +463,7 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
             {(novedad.menciones || []).map((m) => (
               <span
                 key={m}
-                className="bg-black/20 text-black px-1.5 py-0.5 rounded font-black uppercase flex items-center gap-1 shrink-0 text-[9px]"
+                className="bg-black/25 text-black px-1.5 py-0.5 rounded font-black uppercase flex items-center gap-1 shrink-0 text-[9px]"
               >
                 @{m}
                 {!modoCartelera && onQuitarMencion && (
@@ -455,8 +472,9 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
                       e.stopPropagation();
                       onQuitarMencion(novedad.id, m);
                     }}
-                    className="btn-mention-remove ml-0.5 hover:text-red-700 transition-colors cursor-pointer inline-flex items-center"
+                    className="btn-mention-remove ml-0.5 hover:text-red-800 transition-colors cursor-pointer inline-flex items-center focus-visible:ring-1 focus-visible:ring-black"
                     title="Quitar mención"
+                    aria-label={`Quitar mención de ${m}`}
                   >
                     <X className="w-2.5 h-2.5 stroke-[2.5]" />
                   </button>
@@ -464,8 +482,8 @@ export const NoveltyCard: React.FC<NoveltyCardProps> = ({
               </span>
             ))}
 
-            <span className="text-black/60 font-bold tracking-wide ml-auto flex items-center gap-1 shrink-0 whitespace-nowrap">
-              <Clock className="w-3 h-3 text-black/60 stroke-[2] shrink-0" />
+            <span className="text-black/90 font-extrabold tracking-wide ml-auto flex items-center gap-1 shrink-0 whitespace-nowrap">
+              <Clock className="w-3 h-3 text-black stroke-[2.4]" aria-hidden="true" />
               {formatearFecha(novedad.timestamp || novedad.creado_el, novedad.id)}
             </span>
           </div>
