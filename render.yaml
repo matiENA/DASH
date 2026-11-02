@@ -30,3 +30,11 @@ services:
         value: production
       - key: GOOGLE_SERVICE_ACCOUNT_JSON
         sync: false
+      - key: ID_SHEET_MOVIMIENTOS
+        value: 1z66kNDjMki1k9csQevuyhfz50dYoHrQro4wPj-Yt-hc
+      - key: MES_MOVIMIENTOS_ID
+        value: 1z66kNDjMki1k9csQevuyhfz50dYoHrQro4wPj-Yt-hc
+      - key: TAB_MOVIMIENTOS
+        value: "NOVIEMBRE 2026- Mov.Unidades y Choferes"
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        value: firebase-adminsdk-fbsvc@ute-logistica.iam.gserviceaccount.com

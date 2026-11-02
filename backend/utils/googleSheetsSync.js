@@ -137,11 +137,17 @@ function getGoogleAuthClient() {
     // 3. Fallbacks a archivos locales y de nube (Render Secret Files)
     if (!creds) {
         const potentialFiles = [
+            process.env.GOOGLE_CREDENTIALS_PATH,
+            process.env.GOOGLE_APPLICATION_CREDENTIALS,
             '/etc/secrets/credentials.json',
+            path.join(process.cwd(), 'credentials.json'),
+            path.join(process.cwd(), 'backend/credentials.json'),
             path.join(__dirname, '../credentials.json'),
+            path.join(__dirname, '../../credentials.json'),
             path.join(__dirname, '../../server_local/operativas_diarias/credentials.json'),
-            'C:\\Users\\Matias Rodriguez\\Documents\\server_local\\operativas_diarias\\credentials.json'
-        ];
+            'C:\\Users\\Matias Rodriguez\\Documents\\server_local\\operativas_diarias\\credentials.json',
+            'C:\\Users\\Matias Rodriguez\\Documents\\dash\\backend\\credentials.json'
+        ].filter(Boolean);
 
         for (const f of potentialFiles) {
             if (fs.existsSync(f)) {
@@ -170,13 +176,26 @@ function getGoogleAuthClient() {
 }
 
 /**
- * Resuelve la planilla correspondiente según la fecha
+ * Resuelve la planilla correspondiente según la fecha y variables de entorno / YAML (#idmensual)
  */
 function resolveSheetForDate(d) {
+    const envMovId = process.env.ID_SHEET_MOVIMIENTOS || process.env.MES_MOVIMIENTOS_ID || process.env.DEFAULT_MOV_ID;
+    const envTabName = process.env.TAB_MOVIMIENTOS;
+
     const extCfg = loadExternalConfig();
     const year = d.getFullYear();
     const month = d.getMonth() + 1; // 1-12
 
+    // 1. Prioridad: Definición en render.yaml o .env (#idmensual) para el mes activo
+    if (envMovId && (year > 2026 || (year === 2026 && month >= 11))) {
+        return {
+            id: envMovId,
+            tabName: envTabName || 'NOVIEMBRE 2026- Mov.Unidades y Choferes',
+            sheetIdNum: 0
+        };
+    }
+
+    // 2. Definición en config_operativas.json
     if (extCfg) {
         if (year === 2026 && month === 11 && extCfg.mes_actual?.nombre?.includes('Noviembre')) {
             return {
@@ -194,6 +213,7 @@ function resolveSheetForDate(d) {
         }
     }
 
+    // 3. Fallbacks estáticos
     if (year === 2026 && month === 11) {
         return SPREADSHEETS.NOVIEMBRE_2026;
     }
