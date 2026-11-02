@@ -7,6 +7,7 @@ const cors = require('cors');
 const { Server } = require('socket.io');
 
 const {
+    supabase,
     fetchFlota,
     fetchNovedades,
     fetchRetorno,
@@ -16,6 +17,7 @@ const {
     fetchTiposNovedad,
     iniciarRealtimeListener
 } = require('./utils/supabase');
+const { iniciarReconciliadorBajas } = require('./utils/googleSheetsSync');
 const { normalizarComparacion } = require('./utils/normalizar');
 
 const createDashRouter = require('./routes/dash');
@@ -314,4 +316,7 @@ server.listen(PORT, async () => {
     console.log(`==============================================================\n`);
 
     await hidratarHotRAM();
+
+    // ⏱️ Iniciar reconciliador en segundo plano (Self-Healing Loop anti-fallo cada 5 minutos)
+    iniciarReconciliadorBajas(5 * 60 * 1000, supabase);
 });

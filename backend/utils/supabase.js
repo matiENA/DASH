@@ -2,7 +2,7 @@ require('dotenv').config();
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const { normalizar, normalizarComparacion } = require('./normalizar');
-const { syncBajasGoogleSheets } = require('./googleSheetsSync');
+const { syncBajasGoogleSheets, queueSyncBajas } = require('./googleSheetsSync');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rsvajuxihvmpmrmlcbul.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_publishable_n97mVkSclRpuv_OsseO3gg_BjR9QT3R';
@@ -18,14 +18,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 console.log(`🐘 [Supabase] Cliente conectado a: ${SUPABASE_URL}`);
 
 /**
- * Dispara la sincronización nativa de bajas hacia Google Sheets en segundo plano (asíncrono / no bloqueante)
+ * Dispara la sincronización nativa y resiliente hacia Google Sheets
+ * Utiliza cola en memoria con debouncing y reintentos automáticos
  */
 function dispararSyncBajas(contexto = null) {
-    setImmediate(() => {
-        syncBajasGoogleSheets(contexto, supabase).catch(err => {
-            console.warn("⚠️ [Sync Bajas] Error en sync nativo de Google Sheets:", err.message);
-        });
-    });
+    queueSyncBajas(contexto, supabase);
 }
 
 /**
@@ -247,6 +244,66 @@ async function resolverCreadorId({ creado_por_id, creador, usuario, sharedState 
 }
 
 /**
+ * Resuelve un tipo de novedad a partir de UUID o código textual
+ * Prioriza estrictamente el UUID (tipo_novedad_id)
+ */
+async function resolverTipoNovedadRelacional({ tipo_novedad_id, tipo_novedad, sharedState }) {
+    let matched = null;
+
+    // 1. Buscar por UUID en Hot RAM (O(1))
+    if (tipo_novedad_id && sharedState && Array.isArray(sharedState.tiposNovedad)) {
+        matched = sharedState.tiposNovedad.find(t => String(t.id).toLowerCase() === String(tipo_novedad_id).toLowerCase());
+    }
+
+    // 2. Si no se encontró por UUID y hay código textual, buscar en Hot RAM
+    if (!matched && tipo_novedad && sharedState && Array.isArray(sharedState.tiposNovedad)) {
+        matched = sharedState.tiposNovedad.find(t => String(t.codigo).toUpperCase() === String(tipo_novedad).toUpperCase());
+    }
+
+    // 3. Fallback a Supabase por UUID
+    if (!matched && tipo_novedad_id) {
+        try {
+            const { data } = await supabase
+                .from('tipos_novedad')
+                .select('*')
+                .eq('id', tipo_novedad_id)
+                .limit(1);
+            if (data && data.length > 0) matched = data[0];
+        } catch (e) {}
+    }
+
+    // 4. Fallback a Supabase por código
+    if (!matched && tipo_novedad) {
+        try {
+            const { data } = await supabase
+                .from('tipos_novedad')
+                .select('*')
+                .eq('codigo', tipo_novedad)
+                .limit(1);
+            if (data && data.length > 0) matched = data[0];
+        } catch (e) {}
+    }
+
+    if (matched) {
+        return {
+            tipo_novedad_id: matched.id,
+            tipo_novedad: matched.codigo,
+            tipo_novedad_titulo: matched.titulo,
+            imprime_nota_movimientos: Boolean(matched.imprime_nota_movimientos),
+            requiere_fecha_objetivo: Boolean(matched.requiere_fecha_objetivo)
+        };
+    }
+
+    return {
+        tipo_novedad_id: tipo_novedad_id || null,
+        tipo_novedad: tipo_novedad || 'GENERAL',
+        tipo_novedad_titulo: tipo_novedad || 'GENERAL',
+        imprime_nota_movimientos: false,
+        requiere_fecha_objetivo: false
+    };
+}
+
+/**
  * Despacha acciones de mutación atómicas escribiendo directamente sobre public.novedades
  */
 async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
@@ -302,8 +359,20 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
             throw error;
         }
 
-        // Si la novedad resuelta correspondía a una baja de diagrama, disparar sincronización para refrescar notas
-        dispararSyncBajas();
+        // Si la novedad resuelta correspondía a una baja de diagrama o requería notas en movimientos, disparar limpieza
+        if (data && data.length > 0) {
+            const novRes = data[0];
+            dispararSyncBajas({
+                action: 'limpiar',
+                id_novedad: novRes.id,
+                chofer_id: novRes.chofer_id,
+                fecha_objetivo: novRes.fecha_objetivo,
+                tipo_novedad_id: novRes.tipo_novedad_id,
+                tipo_novedad: novRes.tipo_novedad
+            });
+        } else {
+            dispararSyncBajas(null);
+        }
 
         return data;
     }
@@ -316,7 +385,16 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
             sharedState
         });
 
-        const tipoNov = payload.tipo_novedad || payload.tipo || 'GENERAL';
+        // Resolución prioritaria por UUID (tipo_novedad_id)
+        const tipoRelacional = await resolverTipoNovedadRelacional({
+            tipo_novedad_id: payload.tipo_novedad_id,
+            tipo_novedad: payload.tipo_novedad || payload.tipo,
+            sharedState
+        });
+
+        const tipoNov = tipoRelacional.tipo_novedad;
+        const tipoNovId = tipoRelacional.tipo_novedad_id;
+        const imprimeNotas = tipoRelacional.imprime_nota_movimientos;
         const esLibre = tipoNov === 'LIBRES';
         const finalTerminalId = esLibre ? (payload.terminal_id || relaciones.terminal_id || null) : null;
         const finalCreadorId = await resolverCreadorId({
@@ -325,23 +403,6 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
             usuario: payload.usuario,
             sharedState
         });
-
-        // Resolver tipo_novedad_id relacional
-        let tipoNovId = payload.tipo_novedad_id || null;
-        let imprimeNotas = false;
-        try {
-            const { data: tRow } = await supabase
-                .from('tipos_novedad')
-                .select('id, imprime_nota_movimientos')
-                .eq('codigo', tipoNov)
-                .limit(1);
-            if (tRow && tRow.length > 0) {
-                tipoNovId = tRow[0].id;
-                imprimeNotas = Boolean(tRow[0].imprime_nota_movimientos);
-            }
-        } catch (e) {
-            // Silencioso
-        }
 
         const insertData = {
             tipo_novedad: tipoNov,
@@ -368,11 +429,14 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
 
         if (imprimeNotas || tipoNov === 'BAJA_DIAGRAMA') {
             dispararSyncBajas({
+                action: 'crear',
+                id_novedad: data && data[0] ? data[0].id : null,
                 chofer_id: insertData.chofer_id,
                 chofer_nombre: relaciones.chofer_nombre || payload.nom || payload.chofer || null,
                 fecha_objetivo: insertData.fecha_objetivo,
                 tipo_novedad: tipoNov,
-                tipo_novedad_titulo: payload.tipo_novedad_titulo || tipoNov,
+                tipo_novedad_id: tipoNovId,
+                tipo_novedad_titulo: tipoRelacional.tipo_novedad_titulo,
                 detalle: insertData.detalle
             });
         }
@@ -387,20 +451,20 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
         const updates = {};
         if (payload.detalle !== undefined) updates.detalle = payload.detalle;
         if (payload.fecha_objetivo !== undefined) updates.fecha_objetivo = sanitizarFecha(payload.fecha_objetivo);
-        if (payload.tipo_novedad !== undefined) {
-            updates.tipo_novedad = payload.tipo_novedad;
-            try {
-                const { data: tRow } = await supabase
-                    .from('tipos_novedad')
-                    .select('id')
-                    .eq('codigo', payload.tipo_novedad)
-                    .limit(1);
-                if (tRow && tRow.length > 0) {
-                    updates.tipo_novedad_id = tRow[0].id;
-                }
-            } catch (e) {}
+
+        let imprimeNotas = false;
+        if (payload.tipo_novedad_id !== undefined || payload.tipo_novedad !== undefined) {
+            const tipoRelacional = await resolverTipoNovedadRelacional({
+                tipo_novedad_id: payload.tipo_novedad_id,
+                tipo_novedad: payload.tipo_novedad,
+                sharedState
+            });
+            updates.tipo_novedad = tipoRelacional.tipo_novedad;
+            updates.tipo_novedad_id = tipoRelacional.tipo_novedad_id;
+            imprimeNotas = tipoRelacional.imprime_nota_movimientos;
+
             // Si la novedad no es de tipo LIBRES, se asegura que terminal_id sea null
-            if (payload.tipo_novedad !== 'LIBRES') {
+            if (updates.tipo_novedad !== 'LIBRES') {
                 updates.terminal_id = null;
             } else if (payload.terminal_id !== undefined) {
                 updates.terminal_id = payload.terminal_id || null;
@@ -408,6 +472,7 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
         } else if (payload.terminal_id !== undefined) {
             updates.terminal_id = payload.terminal_id || null;
         }
+
         if (payload.creado_por_id !== undefined) {
             updates.creado_por_id = payload.creado_por_id || null;
         }
@@ -457,7 +522,7 @@ async function dispatchNovedad({ action, id_novedad, payload, sharedState }) {
             throw error;
         }
 
-        if (updates.tipo_novedad === 'BAJA_DIAGRAMA' || updates.fecha_objetivo || payload.tipo_novedad === 'BAJA_DIAGRAMA') {
+        if (imprimeNotas || updates.tipo_novedad === 'BAJA_DIAGRAMA' || updates.fecha_objetivo || payload.tipo_novedad === 'BAJA_DIAGRAMA') {
             dispararSyncBajas(null);
         }
 

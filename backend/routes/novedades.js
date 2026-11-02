@@ -1,11 +1,13 @@
 const express = require('express');
 const {
+    supabase,
     fetchNovedades,
     dispatchNovedad,
     asignarTerminalNovedad,
     gestionarMencionNovedad,
     dispararSyncBajas
 } = require('../utils/supabase');
+const { syncBajasGoogleSheets } = require('../utils/googleSheetsSync');
 
 function createNovedadesRouter(sharedState, ioDash) {
     const router = express.Router();
@@ -110,11 +112,25 @@ function createNovedadesRouter(sharedState, ioDash) {
     });
 
     // POST /api/novedades/sync-bajas — Fuerza la sincronización de hover notes de bajas a Movimientos
-    router.post('/sync-bajas', (req, res) => {
+    router.post('/sync-bajas', async (req, res) => {
         try {
+            if (req.query.wait === 'true' || req.body?.wait) {
+                const startTime = Date.now();
+                const result = await syncBajasGoogleSheets(null, supabase);
+                const durationMs = Date.now() - startTime;
+                return res.json({
+                    success: true,
+                    count: result.count || 0,
+                    durationMs,
+                    result,
+                    message: `Sincronización completada (${result.count || 0} notas aplicadas en ${durationMs}ms).`
+                });
+            }
+
             dispararSyncBajas();
-            res.json({ success: true, message: 'Sincronización de bajas disparada en segundo plano.' });
+            res.json({ success: true, message: 'Sincronización de bajas encolada en segundo plano con reintentos.' });
         } catch (err) {
+            console.error("❌ Error en POST /api/novedades/sync-bajas:", err.message);
             res.status(500).json({ success: false, error: err.message });
         }
     });
