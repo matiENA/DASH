@@ -95,17 +95,17 @@ ioDash.on('connection', (socket) => {
         socket.emit('novedades_actualizadas', sharedState.novedades);
     }
 
-    socket.on('disconnect', () => {
-        console.log(`🔌 [Socket.IO] Cliente desconectado de /dash: ${socket.id}`);
+    socket.on('disconnect', (reason) => {
+        console.log(`🔌 [Socket.IO] Cliente desconectado de /dash: ${socket.id} (Motivo: ${reason})`);
     });
 });
 
 // ==============================================================
-// 🔄 HIDRATACIÓN INICIAL DE HOT RAM AL ARRANCAR
+// 🔄 CARGA INICIAL DE DATOS AL ARRANCAR
 // ==============================================================
-async function hidratarHotRAM() {
+async function hidratarCache() {
     try {
-        console.log("⚡ [Hot RAM] Precargando catálogo de flota, novedades y retornos en memoria...");
+        console.log("⚡ [DASH Cache] Precargando catálogo de flota, novedades y retornos en memoria...");
         const [rawFlota, novedades, retornos, usuarios, terminales, servicios, tiposNovedad] = await Promise.all([
             fetchFlota().catch(() => []),
             fetchNovedades().catch(() => []),
@@ -187,9 +187,9 @@ async function hidratarHotRAM() {
         sharedState.lastNovedadesUpdate = new Date().toISOString();
         sharedState.lastRetornosUpdate = new Date().toISOString();
 
-        console.log(`✅ [Hot RAM] Hidratado exitoso: ${flotaLite.length} choferes en flota, ${novedades.length} novedades, ${retornos.length} retornos.`);
+        console.log(`✅ [DASH Cache] Carga exitosa: ${flotaLite.length} choferes en flota, ${novedades.length} novedades, ${retornos.length} retornos.`);
     } catch (e) {
-        console.error("❌ [Hot RAM] Error durante la hidratación inicial:", e.message);
+        console.error("❌ [DASH Cache] Error durante la carga inicial:", e.message);
     }
 }
 
@@ -249,7 +249,7 @@ app.get(['/health', '/api/health'], (req, res) => {
         service: "dash-backend",
         version: "2.0.0",
         uptime: Math.round(process.uptime()),
-        hot_ram: {
+        cache: {
             flota_count: sharedState.flota.length,
             novedades_count: sharedState.novedades.length,
             retornos_count: sharedState.retornos.length
@@ -280,7 +280,7 @@ app.get('/api/datos', (req, res) => {
 // Ruta raíz informativa
 app.get('/', (req, res) => {
     res.json({
-        service: "DASH Web Service Backend (Hot RAM Engine)",
+        service: "DASH Web Service Backend",
         status: "online",
         compression: "gzip",
         endpoints: {
@@ -315,7 +315,7 @@ server.listen(PORT, async () => {
     console.log(`⚡ Socket.IO activo en namespace /dash`);
     console.log(`==============================================================\n`);
 
-    await hidratarHotRAM();
+    await hidratarCache();
 
     // ⏱️ Iniciar reconciliador en segundo plano (Self-Healing Loop anti-fallo cada 5 minutos)
     iniciarReconciliadorBajas(5 * 60 * 1000, supabase);
