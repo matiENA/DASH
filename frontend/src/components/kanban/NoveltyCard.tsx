@@ -20,14 +20,7 @@ const CONFIG_TERMINALES: Record<string, { bg: string; text: string }> = {
   'DOCK SUD': { bg: '#DD7E6B', text: '#000000' },
   'TVM': { bg: '#38BDF8', text: '#000000' },
   'TPH': { bg: '#FBBF24', text: '#000000' },
-  'TLC': { bg: '#A78BFA', text: '#000000' },
-  'CAMPANA': { bg: '#60A5FA', text: '#FFFFFF' },
-  'ZARATE': { bg: '#34D399', text: '#000000' },
-  'LA PLATA': { bg: '#F472B6', text: '#FFFFFF' },
-  'BAHIA BLANCA': { bg: '#FBBF24', text: '#000000' },
-  'SAN LORENZO': { bg: '#A78BFA', text: '#FFFFFF' },
-  'MONTECRISTO': { bg: '#F87171', text: '#FFFFFF' },
-  'MENDOZA': { bg: '#38BDF8', text: '#000000' }
+  'TLC': { bg: '#A78BFA', text: '#000000' }
 };
 
 const CONFIG_SERVICIOS: Record<string, { bg: string; text: string }> = {

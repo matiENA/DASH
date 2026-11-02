@@ -36,9 +36,28 @@ export interface ServicioChoferItem {
   activo?: boolean;
 }
 
+export interface TipoNovedadItem {
+  id: string;
+  codigo: string;
+  titulo: string;
+  descripcion?: string | null;
+  bg_color?: string;
+  text_color?: string;
+  requiere_fecha_objetivo: boolean;
+  imprime_nota_movimientos: boolean;
+  activo: boolean;
+  orden: number;
+}
+
 export interface Novedad {
   id: number | string;
   tipo_novedad: string;
+  tipo_novedad_id?: string | null;
+  tipo_novedad_titulo?: string;
+  tipo_bg_color?: string;
+  tipo_text_color?: string;
+  requiere_fecha_objetivo?: boolean;
+  imprime_nota_movimientos?: boolean;
   fecha_objetivo: string | null;
   detalle: string;
   resuelto: boolean;
@@ -49,6 +68,7 @@ export interface Novedad {
   fecha_resolucion?: string | null;
   terminal: string;
   terminal_id?: string | null;
+  terminal_nombre?: string | null;
   prioridad?: 'baja' | 'media' | 'alta' | 'critica';
   nom: string;
   chofer_nombre?: string;
@@ -62,6 +82,8 @@ export interface Novedad {
   n_ute?: string;
   srv?: string;
   servicio?: string;
+  servicio_chofer_id?: string | null;
+  ot_activa?: string | null;
   unidad_id?: string | null;
   vtv_tr?: string | null;
   mas_tr?: string | null;
@@ -86,6 +108,9 @@ export interface FlotaItem {
   n_ute?: string;
   foto?: string;
   estado?: string;
+  estado_chofer?: string;
+  estado_unidad?: string;
+  ot_activa?: string | null;
   unidad_id?: string;
   mas_tr?: string | null;
   vtv_tr?: string | null;

@@ -55,7 +55,7 @@ const CATEGORIAS_CONFIG: Record<
 
 interface KanbanCategoryColumnProps {
   catKey: string;
-  cat: { titulo: string; colorText: string; borderColor: string };
+  cat: { titulo: string; colorText: string; borderColor: string; bgHex?: string };
   items: Novedad[];
   flexWeight: number;
   usuarios: Usuario[];
@@ -86,13 +86,18 @@ const KanbanCategoryColumn: React.FC<KanbanCategoryColumnProps> = ({
   return (
     <section
       data-cat={catKey}
-      style={{ flex: `${flexWeight} 1 0%`, minWidth: '130px' }}
-      className={`resizable-column flex-1 border-2 border-dashed ${cat.borderColor} rounded-2xl p-3 bg-transparent flex flex-col h-full min-h-0 overflow-hidden transition-all duration-100 relative`}
+      style={{
+        flex: `${flexWeight} 1 0%`,
+        minWidth: '130px',
+        ...(cat.bgHex ? { borderColor: `${cat.bgHex}66` } : {})
+      }}
+      className={`resizable-column flex-1 border-2 border-dashed ${!cat.bgHex ? cat.borderColor : ''} rounded-2xl p-3 bg-transparent flex flex-col h-full min-h-0 overflow-hidden transition-all duration-100 relative`}
     >
       {/* Título de Columna */}
       <div className="w-full mb-2 shrink-0 flex items-center justify-center pb-1 border-b border-slate-200/40 dark:border-slate-800/40">
         <h2
-          className={`text-[11px] font-black uppercase tracking-widest ${cat.colorText} text-center flex-1 select-none truncate`}
+          style={cat.bgHex ? { color: cat.bgHex } : undefined}
+          className={`text-[11px] font-black uppercase tracking-widest ${!cat.bgHex ? cat.colorText : ''} text-center flex-1 select-none truncate`}
         >
           {cat.titulo}
         </h2>
@@ -141,7 +146,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onQuitarMencion,
   onRecargar
 }) => {
-  const { vistaActual, sesion, busqueda, filtroTerminal, columnWidths } = useDashStore();
+  const { vistaActual, sesion, busqueda, filtroTerminal, columnWidths, tiposNovedad } = useDashStore();
   const usuarioActual = sesion?.usuario ? sesion.usuario.toUpperCase() : '';
 
   // Filtrado de novedades
@@ -278,32 +283,56 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // ==========================================
   // VISTA: TODAS (TABLERO KANBAN PROPORCIONAL)
   // ==========================================
+  // Configuración dinámica de columnas según tiposNovedad
+  const categoriasConfig = useMemo(() => {
+    const map: Record<string, { titulo: string; colorText: string; borderColor: string; bgHex?: string }> = {};
+    if (tiposNovedad && tiposNovedad.length > 0) {
+      tiposNovedad.forEach((tn) => {
+        if (tn.codigo === 'LIBRES') return; // Se renderiza en LibresRow
+        const fallback = CATEGORIAS_CONFIG[tn.codigo] || {
+          titulo: tn.titulo.toUpperCase(),
+          colorText: 'text-indigo-500',
+          borderColor: 'border-indigo-500'
+        };
+        map[tn.codigo] = {
+          titulo: tn.titulo.toUpperCase(),
+          colorText: fallback.colorText,
+          borderColor: fallback.borderColor,
+          bgHex: tn.bg_color || undefined
+        };
+      });
+    } else {
+      Object.assign(map, CATEGORIAS_CONFIG);
+    }
+    return map;
+  }, [tiposNovedad]);
+
   // Agrupar novedades por categoría
-  const categoriasItems: Record<string, Novedad[]> = {
-    BAJA_DIAGRAMA: [],
-    REPARACION: [],
-    CERTIFICACION_UNIDAD: [],
-    EXAMEN_CHOFER: [],
-    ESTADO_DEMORA: []
-  };
+  const colKeys = Object.keys(categoriasConfig);
+  const categoriasItems: Record<string, Novedad[]> = {};
+  colKeys.forEach((key) => {
+    categoriasItems[key] = [];
+  });
 
   activas.forEach((n) => {
     if (n.tipo_novedad === 'LIBRES') return;
     if (categoriasItems[n.tipo_novedad]) {
       categoriasItems[n.tipo_novedad].push(n);
     } else {
-      categoriasItems['REPARACION'].push(n);
+      const defaultCol = categoriasItems['REPARACION'] ? 'REPARACION' : colKeys[0];
+      if (defaultCol && categoriasItems[defaultCol]) {
+        categoriasItems[defaultCol].push(n);
+      }
     }
   });
 
   const tieneRetornos = retornos && retornos.length > 0;
-  const colKeys = Object.keys(CATEGORIAS_CONFIG);
 
   // Armar lista de claves visibles en el kanban
   const columnasVisibles: string[] = [];
   if (tieneRetornos) columnasVisibles.push('VUELVE');
   colKeys.forEach((key) => {
-    if (categoriasItems[key].length > 0 || !tieneRetornos) {
+    if (categoriasItems[key] && (categoriasItems[key].length > 0 || !tieneRetornos)) {
       columnasVisibles.push(key);
     }
   });
@@ -347,7 +376,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             );
           }
 
-          const cat = CATEGORIAS_CONFIG[key];
+          const cat = categoriasConfig[key] || CATEGORIAS_CONFIG[key] || {
+            titulo: key,
+            colorText: 'text-indigo-500',
+            borderColor: 'border-indigo-500'
+          };
           const items = categoriasItems[key] || [];
 
           return (

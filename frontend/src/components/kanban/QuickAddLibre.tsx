@@ -14,7 +14,7 @@ export const QuickAddLibre: React.FC<QuickAddLibreProps> = ({
   flota,
   onNovedadPublicada
 }) => {
-  const { modoCartelera, sesion } = useDashStore();
+  const { modoCartelera, sesion, tiposNovedad } = useDashStore();
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -60,6 +60,7 @@ export const QuickAddLibre: React.FC<QuickAddLibreProps> = ({
     setBusqueda('');
 
     try {
+      const tipoLibre = tiposNovedad?.find((t) => t.codigo === 'LIBRES');
       const payload = {
         chofer_id: item.chofer_id || null,
         unidad_id: item.unidad_id || null,
@@ -68,6 +69,8 @@ export const QuickAddLibre: React.FC<QuickAddLibreProps> = ({
         srv: item.srv || item.srv_chofer || 'S/A',
         n_ute: item.n_ute || 'S/D',
         tipo_novedad: 'LIBRES',
+        tipo_novedad_id: tipoLibre?.id || null,
+        tipo_novedad_titulo: tipoLibre?.titulo || 'Libres',
         terminal: '',
         fecha_objetivo: null,
         detalle: '',

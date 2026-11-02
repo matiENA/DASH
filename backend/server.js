@@ -13,6 +13,7 @@ const {
     fetchUsuarios,
     fetchTerminales,
     fetchServiciosChoferes,
+    fetchTiposNovedad,
     iniciarRealtimeListener
 } = require('./utils/supabase');
 const { normalizarComparacion } = require('./utils/normalizar');
@@ -77,6 +78,7 @@ const sharedState = {
     retornos: [],
     catalogoTerminales: [],
     servicios: [],
+    tiposNovedad: [],
     vencimientosObj: [],
     lastFlotaUpdate: null,
     lastNovedadesUpdate: null,
@@ -102,13 +104,14 @@ ioDash.on('connection', (socket) => {
 async function hidratarHotRAM() {
     try {
         console.log("⚡ [Hot RAM] Precargando catálogo de flota, novedades y retornos en memoria...");
-        const [rawFlota, novedades, retornos, usuarios, terminales, servicios] = await Promise.all([
+        const [rawFlota, novedades, retornos, usuarios, terminales, servicios, tiposNovedad] = await Promise.all([
             fetchFlota().catch(() => []),
             fetchNovedades().catch(() => []),
             fetchRetorno().catch(() => []),
             fetchUsuarios().catch(() => []),
             fetchTerminales().catch(() => []),
-            fetchServiciosChoferes().catch(() => [])
+            fetchServiciosChoferes().catch(() => []),
+            fetchTiposNovedad().catch(() => [])
         ]);
 
         const flotaLite = [];
@@ -132,6 +135,9 @@ async function hidratarHotRAM() {
                 n_ute: row.n_ute || 'S/D',
                 foto: row.foto || '',
                 estado: row.estado_chofer || 'disponible',
+                estado_chofer: row.estado_chofer || 'disponible',
+                estado_unidad: row.estado_unidad || 'disponible',
+                ot_activa: row.ot_activa || null,
                 unidad_id: row.unidad_id || null,
                 mas_tr: row.mas_tr || null,
                 vtv_tr: row.vtv_tr || null,
@@ -167,6 +173,7 @@ async function hidratarHotRAM() {
         sharedState.usuarios = usuarios;
         sharedState.catalogoTerminales = terminales;
         sharedState.servicios = servicios;
+        sharedState.tiposNovedad = tiposNovedad;
 
         // Enriquecer retornos con tractor si viene vacío
         sharedState.retornos = retornos.map(r => ({
@@ -202,7 +209,7 @@ iniciarRealtimeListener(async (origen, payload) => {
 });
 
 // ==============================================================
-// ⏱️ DIRTY CHECK DEFENSIVO CADA 30 SEGUNDOS
+// ⏱️ DIRTY CHECK DEFENSIVO CADA 3 MINUTOS (Fallback para WebSocket)
 // ==============================================================
 setInterval(async () => {
     try {
@@ -227,7 +234,7 @@ setInterval(async () => {
     } catch (e) {
         // Silencioso para no ensuciar logs
     }
-}, 30000);
+}, 180000);
 
 // ==============================================================
 // 🛣️ RUTAS API

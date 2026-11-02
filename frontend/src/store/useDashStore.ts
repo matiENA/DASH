@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { VistaTab, SesionUsuario, Novedad, TerminalItem, ServicioChoferItem } from '../types/dash';
+import { VistaTab, SesionUsuario, Novedad, TerminalItem, ServicioChoferItem, TipoNovedadItem } from '../types/dash';
 
 interface DashState {
   // Navegación de Vistas
@@ -44,6 +44,10 @@ interface DashState {
   // Catálogo de Servicios de Choferes
   servicios: ServicioChoferItem[];
   setServicios: (servicios: ServicioChoferItem[]) => void;
+
+  // Catálogo de Tipos de Novedad
+  tiposNovedad: TipoNovedadItem[];
+  setTiposNovedad: (tipos: TipoNovedadItem[]) => void;
 
   // Drag and Drop (Service Drop Overlay)
   activeDragCardId: string | number | null;
@@ -170,6 +174,9 @@ export const useDashStore = create<DashState>((set) => ({
 
   servicios: [],
   setServicios: (servicios) => set({ servicios }),
+
+  tiposNovedad: [],
+  setTiposNovedad: (tiposNovedad) => set({ tiposNovedad }),
 
   activeDragCardId: null,
   setActiveDragCardId: (id) => set({ activeDragCardId: id, overlayServiceAbierto: !!id }),

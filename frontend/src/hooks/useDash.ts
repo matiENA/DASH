@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Novedad, FlotaItem, Usuario, RetornoItem, TerminalItem } from '../types/dash';
+import { Novedad, FlotaItem, Usuario, RetornoItem, TerminalItem, TipoNovedadItem } from '../types/dash';
 import { api } from '../services/api';
 import { useDashStore } from '../store/useDashStore';
 
@@ -12,26 +12,28 @@ const SOCKET_URL = (import.meta as any).env?.VITE_SOCKET_URL ||
   (isLocal ? 'http://localhost:3005' : 'https://dash-backend-mba1.onrender.com');
 
 export function useDash() {
-  const { setTerminales, setServicios } = useDashStore();
+  const { setTerminales, setServicios, setTiposNovedad } = useDashStore();
   const [novedades, setNovedades] = useState<Novedad[]>([]);
   const [flota, setFlota] = useState<FlotaItem[]>([]);
   const [vencimientos, setVencimientos] = useState<any[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [retornos, setRetornos] = useState<RetornoItem[]>([]);
   const [terminales, setTerminalesLocales] = useState<TerminalItem[]>([]);
+  const [tiposNovedad, setTiposNovedadLocales] = useState<TipoNovedadItem[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const cargarDatos = useCallback(async () => {
     try {
       setCargando(true);
-      const [novs, flotaRes, usrs, rets, terms, servs] = await Promise.all([
+      const [novs, flotaRes, usrs, rets, terms, servs, tipos] = await Promise.all([
         api.fetchNovedades().catch(() => []),
         api.fetchFlota().catch(() => ({ flota: [], vencimientosObj: [] })),
         api.fetchUsuarios().catch(() => []),
         api.fetchRetornos().catch(() => []),
         api.fetchTerminales().catch(() => []),
-        api.fetchServicios().catch(() => [])
+        api.fetchServicios().catch(() => []),
+        api.fetchTiposNovedad().catch(() => [])
       ]);
       setNovedades(novs);
       setFlota(flotaRes.flota);
@@ -41,13 +43,15 @@ export function useDash() {
       setTerminalesLocales(terms);
       setTerminales(terms);
       setServicios(servs);
+      setTiposNovedadLocales(tipos);
+      setTiposNovedad(tipos);
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Error cargando datos');
     } finally {
       setCargando(false);
     }
-  }, [setTerminales, setServicios]);
+  }, [setTerminales, setServicios, setTiposNovedad]);
 
   useEffect(() => {
     cargarDatos();
@@ -170,6 +174,7 @@ export function useDash() {
     usuarios,
     retornos,
     terminales,
+    tiposNovedad,
     cargando,
     error,
     recargar: cargarDatos,

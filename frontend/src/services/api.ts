@@ -1,4 +1,4 @@
-import { Novedad, FlotaItem, Usuario, RetornoItem, SesionUsuario, TerminalItem, ServicioChoferItem } from '../types/dash';
+import { Novedad, FlotaItem, Usuario, RetornoItem, SesionUsuario, TerminalItem, ServicioChoferItem, TipoNovedadItem } from '../types/dash';
 
 const isLocal = typeof window !== 'undefined' && 
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -28,6 +28,18 @@ export const api = {
       flota: json.flota || [],
       vencimientosObj: json.vencimientosObj || []
     };
+  },
+
+  async fetchTiposNovedad(): Promise<TipoNovedadItem[]> {
+    try {
+      const res = await fetch(`${API_BASE}/api/dash/tipos-novedad`);
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json.data || [];
+    } catch (e) {
+      console.warn('No se pudo cargar tipos de novedad:', e);
+      return [];
+    }
   },
 
   async fetchTerminales(): Promise<TerminalItem[]> {

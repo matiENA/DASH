@@ -42,6 +42,9 @@ function createDashRouter(sharedState, ioDash) {
                     n_ute: row.n_ute || 'S/D',
                     foto: row.foto || '',
                     estado: row.estado_chofer || 'disponible',
+                    estado_chofer: row.estado_chofer || 'disponible',
+                    estado_unidad: row.estado_unidad || 'disponible',
+                    ot_activa: row.ot_activa || null,
                     unidad_id: row.unidad_id || null,
                     mas_tr: row.mas_tr || null,
                     vtv_tr: row.vtv_tr || null,
@@ -254,18 +257,20 @@ function createDashRouter(sharedState, ioDash) {
     router.post('/refresh', async (req, res) => {
         try {
             console.log("⚡ [Hot RAM] Invocada recarga manual de caché...");
-            const [novs, fl, rets, usrs, terms] = await Promise.all([
+            const [novs, fl, rets, usrs, terms, tipos] = await Promise.all([
                 fetchNovedades().catch(() => []),
                 fetchFlota().catch(() => []),
                 fetchRetorno().catch(() => []),
                 fetchUsuarios().catch(() => []),
-                fetchTerminales().catch(() => [])
+                fetchTerminales().catch(() => []),
+                fetchTiposNovedad().catch(() => [])
             ]);
 
             if (sharedState) {
                 sharedState.novedades = novs;
                 sharedState.usuarios = usrs;
                 sharedState.catalogoTerminales = terms;
+                sharedState.tiposNovedad = tipos;
 
                 // Reconstruir mapa de flota
                 const flotaLite = [];
@@ -537,11 +542,28 @@ function createDashRouter(sharedState, ioDash) {
         }
     });
 
-    // GET /api/dash/tipos-novedad — Catálogo de tipos de novedad oficiales
+    // GET /api/dash/tipos-novedad — Catálogo de tipos de novedad oficiales con Hot RAM
     router.get('/tipos-novedad', async (req, res) => {
         try {
+            if (sharedState && sharedState.tiposNovedad && sharedState.tiposNovedad.length > 0) {
+                return res.json({
+                    success: true,
+                    count: sharedState.tiposNovedad.length,
+                    data: sharedState.tiposNovedad,
+                    cached: true
+                });
+            }
+
             const tipos = await fetchTiposNovedad();
-            res.json({ success: true, count: tipos.length, data: tipos });
+            if (sharedState) sharedState.tiposNovedad = tipos;
+
+            res.json({
+                success: true,
+                count: tipos.length,
+                data: tipos,
+                cached: false,
+                timestamp: new Date().toISOString()
+            });
         } catch (err) {
             console.error("❌ Error en GET /api/dash/tipos-novedad:", err.message);
             res.status(500).json({ success: false, error: err.message });

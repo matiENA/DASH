@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, ArrowLeft, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import { FlotaItem, Novedad } from '../../types/dash';
+import { FlotaItem, Novedad, TipoNovedadItem } from '../../types/dash';
 import { api } from '../../services/api';
 import { useDashStore } from '../../store/useDashStore';
 import { formatearPatente, PatenteMercosur } from '../common/PatenteMercosur';
@@ -13,16 +13,16 @@ interface NoveltyModalProps {
   onGuardadoExitoso: () => void;
 }
 
-const CONFIG_CLASIFICACIONES: Record<
+const CONFIG_CLASIFICACIONES_FALLBACK: Record<
   string,
-  { titulo: string; bg: string; text: string }
+  { titulo: string; bg: string; text: string; bgHex: string; textHex: string }
 > = {
-  LIBRES: { titulo: 'Libres', bg: 'bg-[#00FFFF]', text: 'text-slate-950' },
-  CERTIFICACION_UNIDAD: { titulo: 'Certificación de unidad', bg: 'bg-[#FFAE42]', text: 'text-slate-950' },
-  REPARACION: { titulo: 'Reparaciones requeridas', bg: 'bg-[#6366F1]', text: 'text-white' },
-  BAJA_DIAGRAMA: { titulo: 'Baja / Término de diagrama', bg: 'bg-[#EF4444]', text: 'text-white' },
-  ESTADO_DEMORA: { titulo: 'Estado / Demora', bg: 'bg-[#D28976]', text: 'text-white' },
-  EXAMEN_CHOFER: { titulo: 'Exámenes / Vencimientos', bg: 'bg-[#10B981]', text: 'text-white' }
+  LIBRES: { titulo: 'Libres', bg: 'bg-[#00FFFF]', text: 'text-slate-950', bgHex: '#00FFFF', textHex: '#020617' },
+  CERTIFICACION_UNIDAD: { titulo: 'Certificación de unidad', bg: 'bg-[#FFAE42]', text: 'text-slate-950', bgHex: '#FFAE42', textHex: '#020617' },
+  REPARACION: { titulo: 'Reparaciones requeridas', bg: 'bg-[#6366F1]', text: 'text-white', bgHex: '#6366F1', textHex: '#FFFFFF' },
+  BAJA_DIAGRAMA: { titulo: 'Baja / Término de diagrama', bg: 'bg-[#EF4444]', text: 'text-white', bgHex: '#EF4444', textHex: '#FFFFFF' },
+  ESTADO_DEMORA: { titulo: 'Estado / Demora', bg: 'bg-[#D28976]', text: 'text-white', bgHex: '#D28976', textHex: '#FFFFFF' },
+  EXAMEN_CHOFER: { titulo: 'Exámenes / Vencimientos', bg: 'bg-[#10B981]', text: 'text-white', bgHex: '#10B981', textHex: '#FFFFFF' }
 };
 
 export const NoveltyModal: React.FC<NoveltyModalProps> = ({
@@ -32,11 +32,12 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
   onCerrar,
   onGuardadoExitoso
 }) => {
-  const { sesion, terminales: terminalesCatalogo } = useDashStore();
+  const { sesion, terminales: terminalesCatalogo, tiposNovedad } = useDashStore();
   const [paso, setPaso] = useState<1 | 2>(1);
 
   // Form Fields
   const [tipo, setTipo] = useState<string>('LIBRES');
+  const [tipoId, setTipoId] = useState<string | null>(null);
   const [nom, setNom] = useState('');
   const [tractor, setTractor] = useState('');
   const [choferId, setChoferId] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
     if (novedadEnEdicion) {
       setPaso(2);
       setTipo(novedadEnEdicion.tipo_novedad || 'LIBRES');
+      setTipoId(novedadEnEdicion.tipo_novedad_id || null);
       setNom(novedadEnEdicion.nom || '');
       setTractor(novedadEnEdicion.tractor || '');
       setChoferId(novedadEnEdicion.chofer_id || null);
@@ -87,6 +89,8 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
     } else {
       setPaso(1);
       setTipo('LIBRES');
+      const tipoLibre = tiposNovedad?.find(t => t.codigo === 'LIBRES');
+      setTipoId(tipoLibre?.id || null);
       setNom('');
       setTractor('');
       setChoferId(null);
@@ -101,19 +105,43 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
       setCheckMass(false);
       setCalendarMonth(new Date());
     }
-  }, [novedadEnEdicion, abierto]);
+  }, [novedadEnEdicion, abierto, tiposNovedad]);
 
   if (!abierto) return null;
 
-  const cfgActual = CONFIG_CLASIFICACIONES[tipo] || {
+  const listaTipos: TipoNovedadItem[] = (tiposNovedad && tiposNovedad.length > 0)
+    ? tiposNovedad
+    : Object.keys(CONFIG_CLASIFICACIONES_FALLBACK).map(catKey => {
+        const c = CONFIG_CLASIFICACIONES_FALLBACK[catKey];
+        return {
+          id: '',
+          codigo: catKey,
+          titulo: c.titulo,
+          bg_color: c.bgHex,
+          text_color: c.textHex,
+          requiere_fecha_objetivo: catKey === 'BAJA_DIAGRAMA' || catKey === 'CERTIFICACION_UNIDAD' || catKey === 'EXAMEN_CHOFER',
+          imprime_nota_movimientos: catKey === 'BAJA_DIAGRAMA',
+          activo: true,
+          orden: 0
+        };
+      });
+
+  const tipoItemActual = listaTipos.find(t => t.codigo === tipo) || {
+    id: '',
+    codigo: tipo,
     titulo: 'Reportar Novedad',
-    bg: 'bg-indigo-600',
-    text: 'text-white'
+    bg_color: '#6366F1',
+    text_color: '#FFFFFF',
+    requiere_fecha_objetivo: false,
+    imprime_nota_movimientos: false,
+    activo: true,
+    orden: 0
   };
 
-  const seleccionarClasificacion = (tipoClasif: string) => {
-    setTipo(tipoClasif);
-    if (tipoClasif !== 'LIBRES') {
+  const seleccionarClasificacion = (tipoItem: TipoNovedadItem | { codigo: string; id?: string }) => {
+    setTipo(tipoItem.codigo);
+    setTipoId(tipoItem.id || null);
+    if (tipoItem.codigo !== 'LIBRES') {
       setTerminal('');
       setTerminalId(null);
     }
@@ -172,6 +200,12 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
     }
 
     const esLibre = tipo === 'LIBRES';
+    let finalTipoId = tipoId;
+    if (!finalTipoId && tiposNovedad && tiposNovedad.length > 0) {
+      const match = tiposNovedad.find(t => t.codigo === tipo);
+      if (match) finalTipoId = match.id;
+    }
+
     const payload = {
       chofer_id: choferId,
       unidad_id: unidadId,
@@ -181,6 +215,8 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
       srv,
       n_ute: nUte,
       tipo_novedad: tipo,
+      tipo_novedad_id: finalTipoId || null,
+      tipo_novedad_titulo: tipoItemActual.titulo,
       terminal: esLibre ? terminal : '',
       fecha_objetivo: fechaObjetivo && fechaObjetivo.trim() !== '' ? fechaObjetivo.trim() : null,
       detalle: detalleFinal,
@@ -235,14 +271,17 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
             </div>
 
             <div className="p-5 grid grid-cols-2 gap-3.5 overflow-y-auto custom-scrollbar max-h-[70vh]">
-              {Object.keys(CONFIG_CLASIFICACIONES).map((catKey) => {
-                const c = CONFIG_CLASIFICACIONES[catKey];
+              {listaTipos.map((c) => {
+                const bgStyle = c.bg_color?.startsWith('#')
+                  ? { backgroundColor: c.bg_color, color: c.text_color || '#FFFFFF' }
+                  : undefined;
                 return (
                   <button
-                    key={catKey}
+                    key={c.codigo}
                     type="button"
-                    onClick={() => seleccionarClasificacion(catKey)}
-                    className={`h-20 rounded-2xl ${c.bg} ${c.text} font-black p-4 flex items-center justify-start transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm cursor-pointer text-left`}
+                    onClick={() => seleccionarClasificacion(c)}
+                    style={bgStyle}
+                    className="h-20 rounded-2xl font-black p-4 flex items-center justify-start transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm cursor-pointer text-left bg-indigo-600 text-white"
                   >
                     <span className="text-sm font-black leading-tight">
                       {c.titulo}
@@ -259,7 +298,12 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
           <div className="flex flex-col flex-1 overflow-hidden">
             {/* Header Adaptativo */}
             <div
-              className={`flex justify-between items-center p-4 transition-colors duration-300 shrink-0 ${cfgActual.bg} ${cfgActual.text}`}
+              style={
+                tipoItemActual.bg_color?.startsWith('#')
+                  ? { backgroundColor: tipoItemActual.bg_color, color: tipoItemActual.text_color || '#FFFFFF' }
+                  : undefined
+              }
+              className="flex justify-between items-center p-4 transition-colors duration-300 shrink-0 bg-indigo-600 text-white"
             >
               {!novedadEnEdicion && (
                 <button
@@ -273,7 +317,7 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
                 </button>
               )}
               <h2 className="text-sm font-black uppercase tracking-wide text-center truncate mx-2 flex-1">
-                {novedadEnEdicion ? `EDITAR: ${nom || 'NOVEDAD'}` : cfgActual.titulo}
+                {novedadEnEdicion ? `EDITAR: ${nom || 'NOVEDAD'}` : tipoItemActual.titulo}
               </h2>
               <button
                 type="button"
@@ -375,13 +419,9 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
                       ? terminalesCatalogo.map(t => ({ id: t.id, codigo: t.codigo }))
                       : [
                           { id: '', codigo: 'DOCK SUD' },
-                          { id: '', codigo: 'CAMPANA' },
-                          { id: '', codigo: 'ZARATE' },
-                          { id: '', codigo: 'LA PLATA' },
-                          { id: '', codigo: 'BAHIA BLANCA' },
-                          { id: '', codigo: 'SAN LORENZO' },
-                          { id: '', codigo: 'MONTECRISTO' },
-                          { id: '', codigo: 'MENDOZA' }
+                          { id: '', codigo: 'TVM' },
+                          { id: '', codigo: 'TPH' },
+                          { id: '', codigo: 'TLC' }
                         ]
                     ).map((t) => {
                       const seleccionado = (terminalId && t.id && terminalId === t.id) || terminal === t.codigo;
@@ -422,8 +462,13 @@ export const NoveltyModal: React.FC<NoveltyModalProps> = ({
 
               {/* Calendario Desplegado Mensual Integrado */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-                  Fecha Objetivo / Vencimiento
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center justify-between">
+                  <span>Fecha Objetivo / Vencimiento</span>
+                  {tipoItemActual.requiere_fecha_objetivo && (
+                    <span className="text-amber-500 dark:text-amber-400 font-extrabold text-[9px] tracking-normal">
+                      REQUERIDO
+                    </span>
+                  )}
                 </label>
 
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col gap-3">
