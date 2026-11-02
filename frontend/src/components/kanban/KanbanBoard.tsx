@@ -181,6 +181,30 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return { activas: act, resueltas: res, libres: lib };
   }, [novedades, busqueda, filtroTerminal]);
 
+  // Configuración dinámica de columnas según tiposNovedad (declarado al inicio para cumplir las reglas de hooks)
+  const categoriasConfig = useMemo(() => {
+    const map: Record<string, { titulo: string; colorText: string; borderColor: string; bgHex?: string }> = {};
+    if (tiposNovedad && tiposNovedad.length > 0) {
+      tiposNovedad.forEach((tn) => {
+        if (tn.codigo === 'LIBRES') return; // Se renderiza en LibresRow
+        const fallback = CATEGORIAS_CONFIG[tn.codigo] || {
+          titulo: tn.titulo.toUpperCase(),
+          colorText: 'text-indigo-500',
+          borderColor: 'border-indigo-500'
+        };
+        map[tn.codigo] = {
+          titulo: tn.titulo.toUpperCase(),
+          colorText: fallback.colorText,
+          borderColor: fallback.borderColor,
+          bgHex: tn.bg_color || undefined
+        };
+      });
+    } else {
+      Object.assign(map, CATEGORIAS_CONFIG);
+    }
+    return map;
+  }, [tiposNovedad]);
+
   // VISTA: ARCHIVO (Resueltos)
   if (vistaActual === 'archivo') {
     if (resueltas.length === 0) {
@@ -283,30 +307,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // ==========================================
   // VISTA: TODAS (TABLERO KANBAN PROPORCIONAL)
   // ==========================================
-  // Configuración dinámica de columnas según tiposNovedad
-  const categoriasConfig = useMemo(() => {
-    const map: Record<string, { titulo: string; colorText: string; borderColor: string; bgHex?: string }> = {};
-    if (tiposNovedad && tiposNovedad.length > 0) {
-      tiposNovedad.forEach((tn) => {
-        if (tn.codigo === 'LIBRES') return; // Se renderiza en LibresRow
-        const fallback = CATEGORIAS_CONFIG[tn.codigo] || {
-          titulo: tn.titulo.toUpperCase(),
-          colorText: 'text-indigo-500',
-          borderColor: 'border-indigo-500'
-        };
-        map[tn.codigo] = {
-          titulo: tn.titulo.toUpperCase(),
-          colorText: fallback.colorText,
-          borderColor: fallback.borderColor,
-          bgHex: tn.bg_color || undefined
-        };
-      });
-    } else {
-      Object.assign(map, CATEGORIAS_CONFIG);
-    }
-    return map;
-  }, [tiposNovedad]);
-
   // Agrupar novedades por categoría
   const colKeys = Object.keys(categoriasConfig);
   const categoriasItems: Record<string, Novedad[]> = {};
